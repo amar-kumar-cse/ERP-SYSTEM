@@ -29,6 +29,7 @@ public class FeeService {
 
     private final FeeRepository feeRepository;
     private final StudentRepository studentRepository;
+    private final EmailService emailService;
 
     @Transactional
     public int generateMonthlyFees(FeeGenerateDto dto) {
@@ -61,6 +62,18 @@ public class FeeService {
                     .build();
 
             newFees.add(fee);
+
+            // Send notification to parent if email exists
+            if (student.getParentUser() != null && student.getParentUser().getEmail() != null) {
+                String monthName = Month.of(dto.getMonth()).getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                emailService.sendFeeGeneratedEmail(
+                        student.getParentUser().getEmail(),
+                        student.getName(),
+                        monthName + " " + dto.getYear(),
+                        dto.getAmountDue(),
+                        dto.getDueDate()
+                );
+            }
         }
 
         if (!newFees.isEmpty()) {
@@ -120,6 +133,20 @@ public class FeeService {
 
         for (Fee fee : duePastFees) {
             fee.setStatus(FeeStatus.OVERDUE);
+
+            // Send notification to parent
+            Student student = fee.getStudent();
+            if (student != null && student.getParentUser() != null && student.getParentUser().getEmail() != null) {
+                String monthName = Month.of(fee.getMonth()).getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                BigDecimal balance = fee.getAmountDue().subtract(fee.getAmountPaid() != null ? fee.getAmountPaid() : BigDecimal.ZERO);
+                emailService.sendFeeOverdueEmail(
+                        student.getParentUser().getEmail(),
+                        student.getName(),
+                        monthName + " " + fee.getYear(),
+                        balance,
+                        fee.getDueDate()
+                );
+            }
         }
 
         if (!duePastFees.isEmpty()) {

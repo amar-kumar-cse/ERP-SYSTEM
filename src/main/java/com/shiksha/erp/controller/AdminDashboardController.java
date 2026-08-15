@@ -33,17 +33,16 @@ public class AdminDashboardController {
         long totalStudents = studentRepository.count();
         long totalTeachers = teacherRepository.count();
         long totalClasses = classBatchRepository.count();
-        long feeOverdueCount = feeService.getOverdueCount();
-        long openTicketsCount = helpTicketService.getOpenCount();
-
         List<ClassBatchResponseDto> runningBatches = classBatchService.findAll();
+        long openTickets = helpTicketService.getOpenCount();
+        long overdueFees = feeService.getOverdueCount();
 
         model.addAttribute("totalStudents", totalStudents);
         model.addAttribute("totalTeachers", totalTeachers);
         model.addAttribute("totalClasses", totalClasses);
-        model.addAttribute("feeOverdueCount", feeOverdueCount);
-        model.addAttribute("openTicketsCount", openTicketsCount);
-        model.addAttribute("runningBatches", runningBatches);
+        model.addAttribute("totalOverdueFees", overdueFees);
+        model.addAttribute("openTicketsCount", openTickets);
+        model.addAttribute("recentBatches", runningBatches);
         model.addAttribute("activePage", "dashboard");
 
         return "admin/dashboard";

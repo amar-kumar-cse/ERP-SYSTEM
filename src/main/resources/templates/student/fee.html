@@ -4,9 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fee Receipts &amp; Ledger - Shiksha ERP</title>
+    <!-- Fonts & CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Razorpay Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 
@@ -20,6 +27,18 @@
         <div th:replace="~{fragments/topbar :: topbar('Fee Ledger &amp; Invoices')}"></div>
 
         <div class="erp-content">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Payment successful!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Payment failed!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
             <!-- Student Header Profile -->
             <div class="panel-card mb-4">
                 <div class="panel-body d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -40,15 +59,15 @@
                 </div>
             </div>
 
-            <!-- Current Month Fee Banner (Prominent Card) -->
+            <!-- Current Month Fee Banner -->
             <div class="panel-card mb-4 border-2" 
                  th:classappend="${currentMonthFee != null and currentMonthFee.status.name() == 'OVERDUE'} ? 'border-danger' : 'border-primary'" 
                  th:if="${currentMonthFee != null}">
-                <div class="panel-header bg-light d-flex justify-content-between align-items-center">
+                <div class="panel-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <h3 class="panel-title mb-0">
                         <i class="bi bi-receipt me-1"></i> Current Billing Month: <span th:text="${currentMonthFee.monthName + ' ' + currentMonthFee.year}">August 2026</span>
                     </h3>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
                         <span th:if="${currentMonthFee.status.name() == 'PAID'}" class="badge-flat badge-success-flat fs-6">PAID</span>
                         <span th:if="${currentMonthFee.status.name() == 'DUE'}" class="badge-flat badge-warning-flat fs-6">DUE</span>
                         <span th:if="${currentMonthFee.status.name() == 'PARTIAL'}" class="badge-flat badge-info-flat fs-6">PARTIALLY PAID</span>
@@ -61,11 +80,11 @@
                         <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
                         <div>
                             <div class="fw-bold">Payment Due Date Passed!</div>
-                            <small>The due date for this month's fee has passed. Please contact the coaching administration or fee counter to clear outstanding dues.</small>
+                            <small>The due date for this month's fee has passed. Please pay online below or contact administration.</small>
                         </div>
                     </div>
 
-                    <div class="row g-3">
+                    <div class="row g-3 align-items-center">
                         <div class="col-6 col-md-3">
                             <div class="stat-label">Fee Amount</div>
                             <div class="h5 fw-bold text-dark mb-0" th:text="'₹' + ${currentMonthFee.amountDue}">₹1500.00</div>
@@ -82,18 +101,30 @@
                                 ₹0.00
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <div class="stat-label">Due Date</div>
-                            <div class="h6 text-secondary mb-0" th:text="${#temporals.format(currentMonthFee.dueDate, 'dd MMMM yyyy')}">31 Aug 2026</div>
+                        <div class="col-6 col-md-3 text-md-end">
+                            <!-- Pay Now Button if Balance Due -->
+                            <button th:if="${currentMonthFee.balance > 0}" 
+                                    type="button" 
+                                    class="btn btn-erp-primary rounded-pill px-4 py-2"
+                                    th:onclick="'initiateOnlinePayment(' + ${currentMonthFee.id} + ')'">
+                                <i class="bi bi-credit-card-2-front-fill me-1"></i> Pay Online Now
+                            </button>
+
+                            <!-- Download Receipt if Paid -->
+                            <a th:if="${currentMonthFee.status.name() == 'PAID' or currentMonthFee.amountPaid > 0}" 
+                               th:href="@{/student/fee/receipt/{id}/pdf(id=${currentMonthFee.id})}" 
+                               class="btn btn-erp-outline rounded-pill px-4 py-2">
+                                <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i> Download Receipt
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Fee History Table Card -->
+            <!-- Complete Fee History Table Card -->
             <div class="panel-card">
                 <div class="panel-header d-flex justify-content-between align-items-center">
-                    <h3 class="panel-title mb-0">Complete Fee History &amp; Payment Receipts</h3>
+                    <h3 class="panel-title mb-0">Complete Fee History &amp; Receipts</h3>
                     <span class="badge-flat badge-info-flat" th:text="${#lists.size(feeHistory) + ' Statements'}">0 Statements</span>
                 </div>
                 <div class="panel-body p-0 table-responsive">
@@ -107,7 +138,7 @@
                                 <th>Status</th>
                                 <th>Payment Mode</th>
                                 <th>Paid On</th>
-                                <th>Remarks</th>
+                                <th class="text-end">Receipt / Pay</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -136,8 +167,22 @@
                                     <span class="text-secondary small" th:text="${f.paymentMode != null ? f.paymentMode : '-'}">UPI</span>
                                 </td>
                                 <td th:text="${f.paidDate != null ? #temporals.format(f.paidDate, 'dd MMM yyyy') : '-'}">15 Aug 2026</td>
-                                <td>
-                                    <span class="text-secondary small" th:text="${f.remarks != null ? f.remarks : '-'}">-</span>
+                                <td class="text-end">
+                                    <!-- Download PDF button for paid/partial fees -->
+                                    <a th:if="${f.status.name() == 'PAID' or f.amountPaid > 0}" 
+                                       th:href="@{/student/fee/receipt/{id}/pdf(id=${f.id})}" 
+                                       class="btn btn-sm btn-outline-danger rounded-pill px-2" 
+                                       title="Download PDF Receipt">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+
+                                    <!-- Pay Online button for unpaid fees -->
+                                    <button th:if="${f.balance > 0}" 
+                                            type="button" 
+                                            class="btn btn-sm btn-erp-primary rounded-pill px-3" 
+                                            th:onclick="'initiateOnlinePayment(' + ${f.id} + ')'">
+                                        <i class="bi bi-credit-card me-1"></i> Pay
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -148,6 +193,80 @@
     </div>
 </div>
 
+<!-- Hidden Razorpay Verification Form -->
+<form id="razorpayForm" th:action="@{/student/fee/verify}" method="post" style="display: none;">
+    <input type="hidden" name="feeId" id="rzp_feeId">
+    <input type="hidden" name="razorpay_order_id" id="rzp_order_id">
+    <input type="hidden" name="razorpay_payment_id" id="rzp_payment_id">
+    <input type="hidden" name="razorpay_signature" id="rzp_signature">
+</form>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Online Payment Script -->
+<script>
+    function initiateOnlinePayment(feeId) {
+        // Fetch Order Details from Server
+        fetch('/student/fee/pay/' + feeId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error || 'Failed to create payment order'); });
+            }
+            return response.json();
+        })
+        .then(orderData => {
+            // Check if Razorpay SDK loaded or simulated fallback
+            if (typeof Razorpay !== 'undefined' && !orderData.keyId.includes('dummy')) {
+                const options = {
+                    key: orderData.keyId,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'Shiksha Academy',
+                    description: 'Tuition Fee - ' + orderData.monthYear + ' (' + orderData.studentName + ')',
+                    order_id: orderData.orderId,
+                    handler: function(response) {
+                        submitVerification(feeId, response.razorpay_order_id || orderData.orderId, response.razorpay_payment_id, response.razorpay_signature);
+                    },
+                    prefill: {
+                        name: orderData.parentName || orderData.studentName,
+                        contact: orderData.parentPhone || ''
+                    },
+                    theme: {
+                        color: '#2563eb'
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function(response) {
+                    alert('Payment Failed: ' + response.error.description);
+                });
+                rzp.open();
+            } else {
+                // Seamless Sandbox Simulation mode for instant test verification
+                const confirmPay = confirm('Razorpay Sandbox Test Mode:\n\nProceed to simulate payment of ₹' + (orderData.amount / 100) + ' for ' + orderData.studentName + ' (' + orderData.monthYear + ')?');
+                if (confirmPay) {
+                    const mockPaymentId = 'pay_sim_' + Math.random().toString(36).substring(2, 12);
+                    submitVerification(feeId, orderData.orderId, mockPaymentId, 'sandbox_mock_signature');
+                }
+            }
+        })
+        .catch(err => {
+            alert('Error initiating payment: ' + err.message);
+        });
+    }
+
+    function submitVerification(feeId, orderId, paymentId, signature) {
+        document.getElementById('rzp_feeId').value = feeId;
+        document.getElementById('rzp_order_id').value = orderId;
+        document.getElementById('rzp_payment_id').value = paymentId;
+        document.getElementById('rzp_signature').value = signature;
+        document.getElementById('razorpayForm').submit();
+    }
+</script>
 </body>
 </html>

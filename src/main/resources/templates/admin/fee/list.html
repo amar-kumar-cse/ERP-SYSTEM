@@ -178,7 +178,13 @@
                                     <td>
                                         <span class="text-secondary small" th:text="${f.paymentMode != null ? f.paymentMode : '-'}">UPI</span>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end text-nowrap">
+                                        <a th:if="${f.status.name() == 'PAID' or f.amountPaid > 0}" 
+                                           th:href="@{/admin/fee/receipt/{id}/pdf(id=${f.id})}" 
+                                           class="btn btn-sm btn-outline-danger me-1" 
+                                           title="Download Official PDF Receipt">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </a>
                                         <button class="btn btn-sm btn-outline-primary" 
                                                 type="button" 
                                                 data-bs-toggle="collapse" 

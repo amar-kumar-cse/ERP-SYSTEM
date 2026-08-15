@@ -25,4 +25,15 @@ public class ParentStudentHelper {
         return studentRepository.findFirstByParentUserId(parentUser.getId())
                 .orElseThrow(() -> new RuntimeException("No student linked to this account (" + username + ")"));
     }
+
+    public Student getStudentForParent(String username) {
+        return getStudentByParentUsername(username);
+    }
+
+    public void validateParentAccess(String username, Long studentId) {
+        Student student = getStudentByParentUsername(username);
+        if (!student.getId().equals(studentId)) {
+            throw new RuntimeException("Access Denied: You cannot view or modify data for another parent's student.");
+        }
+    }
 }

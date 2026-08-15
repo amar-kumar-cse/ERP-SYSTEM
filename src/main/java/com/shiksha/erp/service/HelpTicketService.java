@@ -21,6 +21,7 @@ import java.util.List;
 public class HelpTicketService {
 
     private final HelpTicketRepository helpTicketRepository;
+    private final EmailService emailService;
 
     @Transactional
     public HelpTicket raiseTicket(TicketCreateDto dto, User user) {
@@ -31,7 +32,17 @@ public class HelpTicketService {
                 .status(TicketStatus.OPEN)
                 .build();
 
-        return helpTicketRepository.save(ticket);
+        HelpTicket saved = helpTicketRepository.save(ticket);
+
+        // Notify admin via async email
+        emailService.sendNewTicketAdminEmail(
+                "admin@shikshaerp.com",
+                saved.getTitle(),
+                user.getUsername(),
+                user.getRole().name()
+        );
+
+        return saved;
     }
 
     @Transactional
@@ -43,7 +54,16 @@ public class HelpTicketService {
         ticket.setAdminNote(dto.getAdminNote().trim());
         ticket.setResolvedAt(LocalDateTime.now());
 
-        helpTicketRepository.save(ticket);
+        HelpTicket saved = helpTicketRepository.save(ticket);
+
+        // Notify user who raised ticket
+        if (saved.getRaisedBy() != null && saved.getRaisedBy().getEmail() != null) {
+            emailService.sendTicketResolvedEmail(
+                    saved.getRaisedBy().getEmail(),
+                    saved.getTitle(),
+                    saved.getAdminNote()
+            );
+        }
     }
 
     @Transactional

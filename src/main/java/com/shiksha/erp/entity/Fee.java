@@ -54,7 +54,13 @@ public class Fee {
     private LocalDate paidDate;
 
     @Column(length = 50)
-    private String paymentMode; // Cash / UPI / NetBanking / Cheque
+    private String paymentMode; // Cash / UPI / NetBanking / Cheque / RAZORPAY
+
+    @Column(length = 100)
+    private String orderId; // Razorpay Order ID
+
+    @Column(length = 100)
+    private String transactionId; // Razorpay Payment ID
 
     @Column(length = 255)
     private String remarks;

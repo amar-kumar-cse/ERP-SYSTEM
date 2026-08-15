@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # MySQL 8.0 Database Container
+  db:
+    image: mysql:8.0
+    container_name: shiksha-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: shiksha_erp
+      MYSQL_USER: shiksha_user
+      MYSQL_PASSWORD: shiksha_password
+      MYSQL_ROOT_PASSWORD: root_secret_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "shiksha_user", "-pshiksha_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shiksha-network
+
+  # Shiksha ERP Spring Boot Application Container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shiksha-erp-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/shiksha_erp?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: shiksha_user
+      SPRING_DATASOURCE_PASSWORD: shiksha_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_shiksha1234}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-rzp_secret_shiksha5678}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-admin@shikshaerp.com}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      APP_MAIL_ENABLED: ${APP_MAIL_ENABLED:-false}
+    ports:
+      - "8080:8080"
+    volumes:
+      - app_uploads:/app/uploads
+    networks:
+      - shiksha-network
+
+volumes:
+  mysql_data:
+  app_uploads:
+
+networks:
+  shiksha-network:
+    driver: bridge

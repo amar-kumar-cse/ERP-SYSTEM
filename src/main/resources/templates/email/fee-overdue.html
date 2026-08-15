@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }
+        .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 30px; }
+        .header { border-bottom: 2px solid #ef4444; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #dc2626; font-size: 20px; font-weight: bold; margin: 0; }
+        .badge { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .details { background: #f8fafc; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
+        .footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Fee Payment Overdue Notice</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 13px;">Shiksha Academy Account Notification</p>
+        </div>
+        <p>Dear Parent,</p>
+        <p>This is a polite reminder that the fee payment for <strong th:text="${studentName}">Student</strong> for the period <strong th:text="${monthYear}">August 2026</strong> is currently <span class="badge">OVERDUE</span>.</p>
+        <div class="details">
+            <div class="detail-row">
+                <span style="color: #64748b;">Amount Due:</span>
+                <strong style="color: #dc2626;" th:text="'₹' + ${amountDue}">₹1,500.00</strong>
+            </div>
+            <div class="detail-row">
+                <span style="color: #64748b;">Original Due Date:</span>
+                <strong th:text="${dueDate}">10-08-2026</strong>
+            </div>
+        </div>
+        <p>Please log in to your Parent Portal to clear the dues via online payment or contact the institute office.</p>
+        <div class="footer">
+            <p>© 2026 Shiksha ERP. Automated system notification.</p>
+        </div>
+    </div>
+</body>
+</html>
