@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Desk Tickets - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Support &amp; Grievances')}"></div>
+
+        <div class="erp-content">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Header & Filter Tabs -->
+            <div class="panel-card mb-4">
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <h2 class="panel-title mb-0">Help &amp; Support Tickets</h2>
+                        <span class="badge bg-danger text-white px-2 py-1" th:if="${openTicketsCount > 0}" th:text="${openTicketsCount + ' Open'}">3 Open</span>
+                    </div>
+
+                    <!-- Filter Nav Pills -->
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-3" 
+                                th:classappend="${selectedStatus == 'ALL' or selectedStatus == ''} ? 'active'" 
+                                th:href="@{/admin/tickets}">
+                                All Tickets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-3" 
+                                th:classappend="${selectedStatus == 'OPEN'} ? 'active'" 
+                                th:href="@{/admin/tickets(status='OPEN')}">
+                                Open Only
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-3" 
+                                th:classappend="${selectedStatus == 'RESOLVED'} ? 'active'" 
+                                th:href="@{/admin/tickets(status='RESOLVED')}">
+                                Resolved
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tickets Table -->
+            <div class="panel-card">
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">S.No</th>
+                                <th>Submitted By</th>
+                                <th>User Role</th>
+                                <th>Ticket Title</th>
+                                <th>Submitted On</th>
+                                <th>Status</th>
+                                <th class="text-end" style="width: 140px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(tickets)}">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-chat-square-check fs-2 d-block mb-2 text-secondary"></i>
+                                    No support tickets found for this filter.
+                                </td>
+                            </tr>
+                            <tr th:each="t, stat : ${tickets}">
+                                <td class="text-muted fw-semibold" th:text="${stat.count}">1</td>
+                                <td class="fw-semibold text-dark" th:text="${t.raisedByUsername}">parent1</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${t.raisedByRole}">PARENT</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${t.title}">Attendance Issue</div>
+                                    <small class="text-secondary text-truncate d-inline-block" style="max-width: 250px;" th:text="${t.message}">Message preview...</small>
+                                </td>
+                                <td th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy, HH:mm')}">15 Aug 2026</td>
+                                <td>
+                                    <span th:if="${t.status.name() == 'OPEN'}" class="badge-flat badge-warning-flat">
+                                        <i class="bi bi-clock me-1"></i> OPEN
+                                    </span>
+                                    <span th:if="${t.status.name() == 'RESOLVED'}" class="badge-flat badge-success-flat">
+                                        <i class="bi bi-check-circle me-1"></i> RESOLVED
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a th:href="@{/admin/tickets/{id}(id=${t.id})}" class="btn btn-sm btn-erp-primary">
+                                        <i class="bi bi-eye me-1"></i> View &amp; Resolve
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

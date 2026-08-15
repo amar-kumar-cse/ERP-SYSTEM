@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Teacher - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Register Teacher')}"></div>
+
+        <div class="erp-content">
+            <!-- Breadcrumbs -->
+            <div class="mb-3">
+                <a th:href="@{/admin/teachers}" class="btn btn-sm btn-erp-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Faculty List
+                </a>
+            </div>
+
+            <!-- Error Banner -->
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Add Teacher Form Card -->
+            <div class="row">
+                <div class="col-12 col-lg-8 col-xl-7">
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Faculty Registration Form</h2>
+                        </div>
+                        <div class="panel-body">
+                            <form th:action="@{/admin/teachers/add}" th:object="${teacher}" method="post">
+                                <!-- Personal & Academic Info -->
+                                <h6 class="fw-bold text-secondary text-uppercase mb-3 pb-2 border-bottom" style="font-size: 0.75rem; letter-spacing: 0.5px;">Personal &amp; Teaching Details</h6>
+                                
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6">
+                                        <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                        <input type="text" id="firstName" th:field="*{firstName}" class="form-control" placeholder="e.g. Ramesh" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                        <input type="text" id="lastName" th:field="*{lastName}" class="form-control" placeholder="e.g. Verma" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="subject" class="form-label">Primary Subject <span class="text-danger">*</span></label>
+                                        <input type="text" id="subject" th:field="*{subject}" class="form-control" placeholder="e.g. Physics / Mathematics" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                        <input type="tel" id="phone" th:field="*{phone}" class="form-control" placeholder="e.g. 9876543210" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="joiningDate" class="form-label">Joining Date</label>
+                                        <input type="date" id="joiningDate" th:field="*{joiningDate}" class="form-control">
+                                    </div>
+                                </div>
+
+                                <!-- Login Account Info -->
+                                <h6 class="fw-bold text-secondary text-uppercase mb-3 pb-2 border-bottom" style="font-size: 0.75rem; letter-spacing: 0.5px;">Portal Account Credentials</h6>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                        <input type="email" id="email" th:field="*{email}" class="form-control" placeholder="e.g. ramesh.verma@shiksha.com" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                        <input type="text" id="username" th:field="*{username}" class="form-control" placeholder="e.g. teacher_ramesh" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                                        <input type="password" id="password" th:field="*{password}" class="form-control" placeholder="Min 6 characters" required>
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                    <a th:href="@{/admin/teachers}" class="btn btn-erp-outline">Cancel</a>
+                                    <button type="submit" class="btn btn-erp-primary px-4">
+                                        <i class="bi bi-check2-circle me-1"></i> Register Faculty
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

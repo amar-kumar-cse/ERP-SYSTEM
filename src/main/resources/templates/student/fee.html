@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Receipts &amp; Ledger - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Fee Ledger &amp; Invoices')}"></div>
+
+        <div class="erp-content">
+            <!-- Student Header Profile -->
+            <div class="panel-card mb-4">
+                <div class="panel-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1" th:text="${student.name}">Aarav Sharma</h2>
+                        <div class="text-secondary small">
+                            Roll No: <strong class="text-dark" th:text="${student.rollNo}">SHK-2026-001</strong>
+                            <span class="mx-2">•</span>
+                            Batch: <span th:text="${student.classBatch != null ? student.classBatch.batchName : 'Unassigned'}">Class 10</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <i class="bi bi-shield-check me-1 text-success"></i> Official Digital Invoice Record
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Month Fee Banner (Prominent Card) -->
+            <div class="panel-card mb-4 border-2" 
+                 th:classappend="${currentMonthFee != null and currentMonthFee.status.name() == 'OVERDUE'} ? 'border-danger' : 'border-primary'" 
+                 th:if="${currentMonthFee != null}">
+                <div class="panel-header bg-light d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title mb-0">
+                        <i class="bi bi-receipt me-1"></i> Current Billing Month: <span th:text="${currentMonthFee.monthName + ' ' + currentMonthFee.year}">August 2026</span>
+                    </h3>
+                    <div>
+                        <span th:if="${currentMonthFee.status.name() == 'PAID'}" class="badge-flat badge-success-flat fs-6">PAID</span>
+                        <span th:if="${currentMonthFee.status.name() == 'DUE'}" class="badge-flat badge-warning-flat fs-6">DUE</span>
+                        <span th:if="${currentMonthFee.status.name() == 'PARTIAL'}" class="badge-flat badge-info-flat fs-6">PARTIALLY PAID</span>
+                        <span th:if="${currentMonthFee.status.name() == 'OVERDUE'}" class="badge-flat badge-danger-flat fs-6">OVERDUE</span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <!-- Overdue Alert -->
+                    <div class="alert alert-danger d-flex align-items-center mb-4" th:if="${currentMonthFee.status.name() == 'OVERDUE'}">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                        <div>
+                            <div class="fw-bold">Payment Due Date Passed!</div>
+                            <small>The due date for this month's fee has passed. Please contact the coaching administration or fee counter to clear outstanding dues.</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-label">Fee Amount</div>
+                            <div class="h5 fw-bold text-dark mb-0" th:text="'₹' + ${currentMonthFee.amountDue}">₹1500.00</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-label">Amount Paid</div>
+                            <div class="h5 fw-bold text-success mb-0" th:text="'₹' + ${currentMonthFee.amountPaid}">₹1500.00</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-label">Remaining Balance</div>
+                            <div class="h5 fw-bold mb-0" 
+                                 th:classappend="${currentMonthFee.balance > 0} ? 'text-danger' : 'text-muted'" 
+                                 th:text="'₹' + ${currentMonthFee.balance}">
+                                ₹0.00
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-label">Due Date</div>
+                            <div class="h6 text-secondary mb-0" th:text="${#temporals.format(currentMonthFee.dueDate, 'dd MMMM yyyy')}">31 Aug 2026</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fee History Table Card -->
+            <div class="panel-card">
+                <div class="panel-header d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title mb-0">Complete Fee History &amp; Payment Receipts</h3>
+                    <span class="badge-flat badge-info-flat" th:text="${#lists.size(feeHistory) + ' Statements'}">0 Statements</span>
+                </div>
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th>Billing Cycle</th>
+                                <th>Due Amount</th>
+                                <th>Amount Paid</th>
+                                <th>Balance Due</th>
+                                <th>Status</th>
+                                <th>Payment Mode</th>
+                                <th>Paid On</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(feeHistory)}">
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-receipt fs-2 d-block mb-2 text-secondary"></i>
+                                    No fee invoices found for this student.
+                                </td>
+                            </tr>
+                            <tr th:each="f : ${feeHistory}">
+                                <td class="fw-semibold text-dark" th:text="${f.monthName + ' ' + f.year}">August 2026</td>
+                                <td class="fw-bold" th:text="'₹' + ${f.amountDue}">₹1500.00</td>
+                                <td class="text-success fw-bold" th:text="'₹' + ${f.amountPaid}">₹1500.00</td>
+                                <td class="fw-bold" 
+                                    th:classappend="${f.balance > 0} ? 'text-danger' : 'text-muted'" 
+                                    th:text="'₹' + ${f.balance}">
+                                    ₹0.00
+                                </td>
+                                <td>
+                                    <span th:if="${f.status.name() == 'PAID'}" class="badge-flat badge-success-flat">PAID</span>
+                                    <span th:if="${f.status.name() == 'DUE'}" class="badge-flat badge-warning-flat">DUE</span>
+                                    <span th:if="${f.status.name() == 'PARTIAL'}" class="badge-flat badge-info-flat">PARTIAL</span>
+                                    <span th:if="${f.status.name() == 'OVERDUE'}" class="badge-flat badge-danger-flat">OVERDUE</span>
+                                </td>
+                                <td>
+                                    <span class="text-secondary small" th:text="${f.paymentMode != null ? f.paymentMode : '-'}">UPI</span>
+                                </td>
+                                <td th:text="${f.paidDate != null ? #temporals.format(f.paidDate, 'dd MMM yyyy') : '-'}">15 Aug 2026</td>
+                                <td>
+                                    <span class="text-secondary small" th:text="${f.remarks != null ? f.remarks : '-'}">-</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

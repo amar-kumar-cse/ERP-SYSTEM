@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students Directory - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Student Directory')}"></div>
+
+        <div class="erp-content">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Action completed successfully!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error performing operation.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Table Header Card (Search & Add Button) -->
+            <div class="panel-card mb-4">
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1 flex-md-grow-0">
+                        <h2 class="panel-title mb-0">Enrolled Students</h2>
+                        <span class="badge-flat badge-info-flat" th:text="${totalStudents + ' Total'}">0 Total</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-end">
+                        <!-- Search Form -->
+                        <form th:action="@{/admin/students}" method="get" class="d-flex gap-2">
+                            <div class="input-group input-group-sm" style="max-width: 280px;">
+                                <input type="text" name="search" th:value="${search}" class="form-control" placeholder="Search name or roll no...">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <a th:if="${search != null and !search.isEmpty()}" th:href="@{/admin/students}" class="btn btn-outline-secondary" title="Clear search">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                            </div>
+                        </form>
+
+                        <!-- Add Student CTA -->
+                        <a th:href="@{/admin/students/add}" class="btn-erp-primary text-nowrap">
+                            <i class="bi bi-person-plus-fill"></i> Add Student
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">#ID</th>
+                                <th>Student Name</th>
+                                <th>Roll No</th>
+                                <th>Parent Details</th>
+                                <th>Parent Username</th>
+                                <th>Assigned Batch</th>
+                                <th class="text-end" style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(students)}">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
+                                    No students found. Click "Add Student" to enroll a student.
+                                </td>
+                            </tr>
+                            <tr th:each="s : ${students}">
+                                <td class="text-muted fw-semibold" th:text="'#' + ${s.id}">#1</td>
+                                <td class="fw-semibold text-dark" th:text="${s.name}">Aarav Sharma</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace" th:text="${s.rollNo}">SHK-2026-001</span>
+                                </td>
+                                <td>
+                                    <div class="fw-medium text-dark" th:text="${s.parentName != null ? s.parentName : '-'}">Rajesh Sharma</div>
+                                    <small class="text-muted" th:if="${s.parentPhone != null}" th:text="${s.parentPhone}">9876543210</small>
+                                </td>
+                                <td>
+                                    <span class="badge-flat badge-info-flat" th:text="${s.parentUsername}">parent1</span>
+                                </td>
+                                <td>
+                                    <span th:if="${s.batchName != null}" class="badge-flat badge-success-flat" th:text="${s.batchName}">Class 10 - Batch A</span>
+                                    <span th:if="${s.batchName == null}" class="badge-flat badge-warning-flat">Unassigned</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a th:href="@{/admin/students/edit/{id}(id=${s.id})}" class="btn btn-sm btn-outline-primary" title="Edit Student">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form th:action="@{/admin/students/delete/{id}(id=${s.id})}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student record?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Student">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" th:if="${totalPages > 1}">
+                    <small class="text-muted">
+                        Showing page <span class="fw-bold" th:text="${currentPage + 1}">1</span> of <span class="fw-bold" th:text="${totalPages}">1</span>
+                    </small>
+
+                    <nav aria-label="Student pagination">
+                        <ul class="pagination pagination-sm m-0">
+                            <!-- Previous -->
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/students(page=${currentPage - 1}, search=${search})}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+
+                            <!-- Max 5 page numbers -->
+                            <li th:each="i : ${#numbers.sequence(T(java.lang.Math).max(0, currentPage - 2), T(java.lang.Math).min(totalPages - 1, currentPage + 2))}"
+                                class="page-item" th:classappend="${currentPage == i} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/students(page=${i}, search=${search})}" th:text="${i + 1}">1</a>
+                            </li>
+
+                            <!-- Next -->
+                            <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/students(page=${currentPage + 1}, search=${search})}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

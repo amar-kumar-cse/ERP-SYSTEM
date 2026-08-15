@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Class Batch - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Edit Class Batch')}"></div>
+
+        <div class="erp-content">
+            <!-- Breadcrumbs -->
+            <div class="mb-3">
+                <a th:href="@{/admin/classes}" class="btn btn-sm btn-erp-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Classes List
+                </a>
+            </div>
+
+            <!-- Error Banner -->
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Edit Batch Form Card -->
+            <div class="row">
+                <div class="col-12 col-lg-7 col-xl-6">
+                    <div class="panel-card">
+                        <div class="panel-header d-flex justify-content-between align-items-center">
+                            <h2 class="panel-title mb-0">Update Class Batch</h2>
+                            <span class="badge-flat badge-info-flat" th:text="${studentCount + ' Students Enrolled'}">0 Students</span>
+                        </div>
+                        <div class="panel-body">
+                            <form th:action="@{/admin/classes/edit/{id}(id=${batchId})}" th:object="${classBatch}" method="post">
+                                <div class="mb-3">
+                                    <label for="batchName" class="form-label">Batch Name / Title <span class="text-danger">*</span></label>
+                                    <input type="text" id="batchName" th:field="*{batchName}" class="form-control" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('batchName')}" th:errors="*{batchName}"></div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="timing" class="form-label">Batch Timing / Schedule <span class="text-danger">*</span></label>
+                                    <input type="text" id="timing" th:field="*{timing}" class="form-control" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('timing')}" th:errors="*{timing}"></div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="days" class="form-label">Schedule Days <span class="text-danger">*</span></label>
+                                    <input type="text" id="days" th:field="*{days}" class="form-control" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('days')}" th:errors="*{days}"></div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                    <a th:href="@{/admin/classes}" class="btn btn-erp-outline">Cancel</a>
+                                    <button type="submit" class="btn btn-erp-primary px-4">
+                                        <i class="bi bi-save me-1"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

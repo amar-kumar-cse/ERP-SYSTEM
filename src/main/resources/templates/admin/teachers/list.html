@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Directory - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Faculty Management')}"></div>
+
+        <div class="erp-content">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Action completed successfully!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error performing operation.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Header Card (Search & Add Button) -->
+            <div class="panel-card mb-4">
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1 flex-md-grow-0">
+                        <h2 class="panel-title mb-0">Teaching Faculty</h2>
+                        <span class="badge-flat badge-info-flat" th:text="${totalTeachers + ' Total'}">0 Total</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-end">
+                        <!-- Search Form -->
+                        <form th:action="@{/admin/teachers}" method="get" class="d-flex gap-2">
+                            <div class="input-group input-group-sm" style="max-width: 280px;">
+                                <input type="text" name="search" th:value="${search}" class="form-control" placeholder="Search name or subject...">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <a th:if="${search != null and !search.isEmpty()}" th:href="@{/admin/teachers}" class="btn btn-outline-secondary" title="Clear search">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                            </div>
+                        </form>
+
+                        <!-- Add Teacher CTA -->
+                        <a th:href="@{/admin/teachers/add}" class="btn-erp-primary text-nowrap">
+                            <i class="bi bi-person-plus-fill"></i> Add Faculty
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Teachers Table -->
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">#ID</th>
+                                <th>Faculty Name</th>
+                                <th>Subject</th>
+                                <th>Contact &amp; Account</th>
+                                <th>Assigned Batches</th>
+                                <th class="text-end" style="width: 180px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(teachers)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-person-badge fs-2 d-block mb-2 text-secondary"></i>
+                                    No faculty members found. Click "Add Faculty" to register.
+                                </td>
+                            </tr>
+                            <tr th:each="t : ${teachers}">
+                                <td class="text-muted fw-semibold" th:text="'#' + ${t.id}">#1</td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${t.fullName}">Ramesh Verma</div>
+                                    <small class="text-muted" th:if="${t.joiningDate != null}">
+                                        Joined: <span th:text="${#temporals.format(t.joiningDate, 'dd MMM yyyy')}">10 Jan 2024</span>
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge-flat badge-primary-flat bg-light text-primary border" th:text="${t.subject}">Mathematics</span>
+                                </td>
+                                <td>
+                                    <div class="text-dark" th:text="${t.phone}">9999999999</div>
+                                    <small class="text-muted" th:text="${t.email}">t1@shiksha.com</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1" th:if="${!#lists.isEmpty(t.assignedBatches)}">
+                                        <span class="badge-flat badge-info-flat" th:each="b : ${t.assignedBatches}" th:text="${b}">Class 10</span>
+                                    </div>
+                                    <span class="badge-flat badge-warning-flat" th:if="${#lists.isEmpty(t.assignedBatches)}">No batches</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a th:href="@{/admin/teachers/{id}/batches(id=${t.id})}" class="btn btn-sm btn-outline-secondary" title="Manage Batches">
+                                            <i class="bi bi-collection-play"></i> Batches
+                                        </a>
+                                        <a th:href="@{/admin/teachers/edit/{id}(id=${t.id})}" class="btn btn-sm btn-outline-primary" title="Edit Faculty">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form th:action="@{/admin/teachers/delete/{id}(id=${t.id})}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this faculty account?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Faculty">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" th:if="${totalPages > 1}">
+                    <small class="text-muted">
+                        Showing page <span class="fw-bold" th:text="${currentPage + 1}">1</span> of <span class="fw-bold" th:text="${totalPages}">1</span>
+                    </small>
+
+                    <nav aria-label="Teacher pagination">
+                        <ul class="pagination pagination-sm m-0">
+                            <!-- Previous -->
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/teachers(page=${currentPage - 1}, search=${search})}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+
+                            <!-- Page Numbers -->
+                            <li th:each="i : ${#numbers.sequence(T(java.lang.Math).max(0, currentPage - 2), T(java.lang.Math).min(totalPages - 1, currentPage + 2))}"
+                                class="page-item" th:classappend="${currentPage == i} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/teachers(page=${i}, search=${search})}" th:text="${i + 1}">1</a>
+                            </li>
+
+                            <!-- Next -->
+                            <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/teachers(page=${currentPage + 1}, search=${search})}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- Role-Aware Sidebar Fragment -->
+<aside class="erp-sidebar" th:fragment="sidebar(activePage)">
+    <!-- App Brand Logo & Name -->
+    <a th:href="@{/dashboard}" class="sidebar-brand">
+        <i class="bi bi-mortarboard-fill"></i>
+        <span>Shiksha ERP</span>
+    </a>
+
+    <!-- ADMIN Navigation -->
+    <div sec:authorize="hasRole('ADMIN')">
+        <div class="sidebar-role-pill">Admin Portal</div>
+        <ul class="nav-links">
+            <li th:classappend="${activePage == 'dashboard'} ? 'active'">
+                <a th:href="@{/admin/dashboard}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'students'} ? 'active'">
+                <a th:href="@{/admin/students}">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Students</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'teachers'} ? 'active'">
+                <a th:href="@{/admin/teachers}">
+                    <i class="bi bi-person-badge-fill"></i>
+                    <span>Teachers</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'classes'} ? 'active'">
+                <a th:href="@{/admin/classes}">
+                    <i class="bi bi-book-half"></i>
+                    <span>Classes</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'fee'} ? 'active'">
+                <a th:href="@{/admin/fee}">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Fee Management</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'tickets'} ? 'active'">
+                <a th:href="@{/admin/tickets}" class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-chat-square-dots-fill"></i>
+                        <span>Support Tickets</span>
+                    </div>
+                    <span th:if="${openTicketCount != null and openTicketCount > 0}" 
+                          class="badge bg-danger rounded-pill px-2 py-1 text-white ms-auto"
+                          th:text="${openTicketCount}">2</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'help'} ? 'active'">
+                <a th:href="@{/help}">
+                    <i class="bi bi-question-circle-fill"></i>
+                    <span>Help Center</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- TEACHER Navigation -->
+    <div sec:authorize="hasRole('TEACHER')">
+        <div class="sidebar-role-pill">Teacher Portal</div>
+        <ul class="nav-links">
+            <li th:classappend="${activePage == 'dashboard'} ? 'active'">
+                <a th:href="@{/teacher/dashboard}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'my-classes' or activePage == 'classes'} ? 'active'">
+                <a th:href="@{/teacher/my-classes}">
+                    <i class="bi bi-collection-play-fill"></i>
+                    <span>My Classes</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'attendance'} ? 'active'">
+                <a th:href="@{/teacher/attendance}">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                    <span>Attendance</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'reports'} ? 'active'">
+                <a th:href="@{/teacher/reports}">
+                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'resources'} ? 'active'">
+                <a th:href="@{/teacher/resources}">
+                    <i class="bi bi-folder-fill"></i>
+                    <span>Resources</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'help'} ? 'active'">
+                <a th:href="@{/help}">
+                    <i class="bi bi-question-circle-fill"></i>
+                    <span>Help Center</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- PARENT / STUDENT Navigation -->
+    <div sec:authorize="hasRole('PARENT')">
+        <div class="sidebar-role-pill">Parent Portal</div>
+        <ul class="nav-links">
+            <li th:classappend="${activePage == 'dashboard'} ? 'active'">
+                <a th:href="@{/student/dashboard}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'attendance'} ? 'active'">
+                <a th:href="@{/student/attendance}">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                    <span>Attendance</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'reports' or activePage == 'report-card'} ? 'active'">
+                <a th:href="@{/student/reports}">
+                    <i class="bi bi-award-fill"></i>
+                    <span>Report Card</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'resources'} ? 'active'">
+                <a th:href="@{/student/resources}">
+                    <i class="bi bi-cloud-arrow-down-fill"></i>
+                    <span>Resources</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'fee'} ? 'active'">
+                <a th:href="@{/student/fee}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Fee Ledger</span>
+                </a>
+            </li>
+            <li th:classappend="${activePage == 'help'} ? 'active'">
+                <a th:href="@{/help}">
+                    <i class="bi bi-question-circle-fill"></i>
+                    <span>Help Center</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Sidebar Bottom: Logged-in User Info + Logout -->
+    <div class="sidebar-user-footer">
+        <div class="user-details">
+            <div class="user-name" sec:authentication="name">Username</div>
+            <div class="user-role" sec:authorize="hasRole('ADMIN')">Administrator</div>
+            <div class="user-role" sec:authorize="hasRole('TEACHER')">Faculty</div>
+            <div class="user-role" sec:authorize="hasRole('PARENT')">Parent</div>
+        </div>
+        <form th:action="@{/logout}" method="post" class="d-inline">
+            <button type="submit" class="btn-logout-sidebar" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </form>
+    </div>
+</aside>
+
+</body>
+</html>

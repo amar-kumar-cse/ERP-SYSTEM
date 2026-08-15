@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Report Card - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Student Report Card')}"></div>
+
+        <div class="erp-content">
+            <!-- Student Profile Summary -->
+            <div class="panel-card mb-4">
+                <div class="panel-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1" th:text="${student.name}">Aarav Sharma</h2>
+                        <div class="text-secondary small">
+                            Roll No: <strong class="text-dark" th:text="${student.rollNo}">SHK-2026-001</strong>
+                            <span class="mx-2">•</span>
+                            Batch: <span th:text="${student.classBatch != null ? student.classBatch.batchName : 'Unassigned'}">Class 10</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end">
+                            <div class="stat-label mb-0">Cumulative Avg</div>
+                            <div class="h5 fw-bold mb-0" 
+                                 th:classappend="${averagePercentage >= 75} ? 'text-success' : (${averagePercentage >= 50} ? 'text-warning' : 'text-danger')"
+                                 th:text="${averagePercentage + '%'}">
+                                85.0%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Filter Panel -->
+            <div class="panel-card mb-4">
+                <div class="panel-body">
+                    <form th:action="@{/student/reports}" method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-md-5">
+                            <label for="subject" class="form-label">Filter by Subject</label>
+                            <select id="subject" name="subject" class="form-select form-control" onchange="this.form.submit()">
+                                <option value="">-- All Subjects --</option>
+                                <option th:each="s : ${subjects}" 
+                                        th:value="${s}" 
+                                        th:text="${s}"
+                                        th:selected="${s == selectedSubject}">Mathematics</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="examDate" class="form-label">Exam Date (Optional)</label>
+                            <input type="date" id="examDate" name="examDate" th:value="${selectedExamDate}" class="form-control">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <button type="submit" class="btn btn-erp-primary w-100">
+                                <i class="bi bi-funnel me-1"></i> Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reports Table Card -->
+            <div class="panel-card">
+                <div class="panel-header d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title mb-0">Test Performance History</h3>
+                    <span class="badge-flat badge-info-flat" th:text="${#lists.size(reports) + ' Tests Recorded'}">0 Tests Recorded</span>
+                </div>
+
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">S.No</th>
+                                <th>Subject</th>
+                                <th>Exam Date</th>
+                                <th class="text-center">Score Obtained</th>
+                                <th class="text-center">Percentage</th>
+                                <th>Teacher Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(reports)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-award fs-2 d-block mb-2 text-secondary"></i>
+                                    No test reports found.
+                                </td>
+                            </tr>
+                            <tr th:each="r, stat : ${reports}">
+                                <td class="text-muted fw-semibold" th:text="${stat.count}">1</td>
+                                <td class="fw-semibold text-dark" th:text="${r.subject}">Mathematics</td>
+                                <td th:text="${#temporals.format(r.examDate, 'dd MMM yyyy')}">15 Aug 2026</td>
+                                <td class="text-center fw-bold" th:text="${r.marks + ' / ' + r.maxMarks}">85 / 100</td>
+                                <td class="text-center">
+                                    <span class="badge-flat" 
+                                          th:classappend="${r.percentage >= 75} ? 'badge-success-flat' : (${r.percentage >= 50} ? 'badge-warning-flat' : 'badge-danger-flat')"
+                                          th:text="${r.percentage + '%'}">
+                                        85.0%
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-secondary small" th:text="${r.remarks != null ? r.remarks : '-'}">Well done</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot th:if="${!#lists.isEmpty(reports)}" class="bg-light">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold text-dark">Average Score Across Tests:</td>
+                                <td class="text-center fw-bold text-primary" th:text="${averagePercentage + '%'}">85.0%</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

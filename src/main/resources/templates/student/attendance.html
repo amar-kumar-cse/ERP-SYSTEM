@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Attendance - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Attendance Calendar')}"></div>
+
+        <div class="erp-content">
+            <!-- Student Banner -->
+            <div class="panel-card mb-4">
+                <div class="panel-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1" th:text="${student.name}">Aarav Sharma</h2>
+                        <div class="text-secondary small">
+                            Roll No: <strong class="text-dark" th:text="${student.rollNo}">SHK-2026-001</strong>
+                            <span class="mx-2">•</span>
+                            Batch: <span th:text="${student.classBatch != null ? student.classBatch.batchName : 'Unassigned'}">Class 10</span>
+                        </div>
+                    </div>
+
+                    <!-- Month Navigation -->
+                    <div class="d-flex align-items-center gap-2">
+                        <a th:href="@{/student/attendance(month=${prevMonth}, year=${prevYear})}" class="btn btn-sm btn-erp-outline">
+                            <i class="bi bi-chevron-left me-1"></i> Prev Month
+                        </a>
+                        <span class="fw-bold px-2" th:text="${yearMonthStr}">August 2026</span>
+                        <a th:if="${!isFutureMonth}" th:href="@{/student/attendance(month=${nextMonth}, year=${nextYear})}" class="btn btn-sm btn-erp-outline">
+                            Next Month <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Month Selector Form -->
+            <div class="panel-card mb-4">
+                <div class="panel-body">
+                    <form th:action="@{/student/attendance}" method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-sm-5 col-md-4">
+                            <label for="month" class="form-label">Select Month</label>
+                            <select id="month" name="month" class="form-select form-control">
+                                <option value="1" th:selected="${selectedMonth == 1}">January</option>
+                                <option value="2" th:selected="${selectedMonth == 2}">February</option>
+                                <option value="3" th:selected="${selectedMonth == 3}">March</option>
+                                <option value="4" th:selected="${selectedMonth == 4}">April</option>
+                                <option value="5" th:selected="${selectedMonth == 5}">May</option>
+                                <option value="6" th:selected="${selectedMonth == 6}">June</option>
+                                <option value="7" th:selected="${selectedMonth == 7}">July</option>
+                                <option value="8" th:selected="${selectedMonth == 8}">August</option>
+                                <option value="9" th:selected="${selectedMonth == 9}">September</option>
+                                <option value="10" th:selected="${selectedMonth == 10}">October</option>
+                                <option value="11" th:selected="${selectedMonth == 11}">November</option>
+                                <option value="12" th:selected="${selectedMonth == 12}">December</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-4 col-md-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" id="year" name="year" th:value="${selectedYear}" min="2020" max="2030" class="form-control">
+                        </div>
+                        <div class="col-12 col-sm-3 col-md-2">
+                            <button type="submit" class="btn btn-erp-primary w-100">
+                                <i class="bi bi-calendar-check me-1"></i> View Month
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Attendance Summary Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Total Classes</div>
+                            <div class="stat-value" th:text="${summary.totalClasses}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Classes Attended</div>
+                            <div class="stat-value text-success" th:text="${summary.present}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Classes Missed</div>
+                            <div class="stat-value text-danger" th:text="${summary.absent}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Monthly Percentage</div>
+                            <div class="stat-value"
+                                 th:classappend="${summary.percentage >= 75} ? 'text-success' : (${summary.percentage >= 50} ? 'text-warning' : 'text-danger')"
+                                 th:text="${summary.percentage + '%'}">
+                                0.0%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Attendance Table Card -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h3 class="panel-title mb-0">Daily Class Attendance Records</h3>
+                </div>
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;">S.No</th>
+                                <th>Class Date</th>
+                                <th>Day of Week</th>
+                                <th class="text-end" style="width: 140px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(attendances)}">
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
+                                    No attendance records available for this month.
+                                </td>
+                            </tr>
+                            <tr th:each="a, stat : ${attendances}">
+                                <td class="text-muted fw-semibold" th:text="${stat.count}">1</td>
+                                <td class="fw-semibold text-dark" th:text="${#temporals.format(a.date, 'dd MMMM yyyy')}">15 August 2026</td>
+                                <td th:text="${#temporals.format(a.date, 'EEEE')}">Monday</td>
+                                <td class="text-end">
+                                    <span class="badge-flat" 
+                                          th:classappend="${a.status.name() == 'PRESENT'} ? 'badge-success-flat' : 'badge-danger-flat'"
+                                          th:text="${a.status.name() == 'PRESENT' ? 'Present' : 'Absent'}">
+                                        Present
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

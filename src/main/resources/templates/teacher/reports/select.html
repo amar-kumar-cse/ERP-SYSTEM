@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Test Marks - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Exam &amp; Test Marks')}"></div>
+
+        <div class="erp-content">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="row">
+                <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+                    <div class="panel-card">
+                        <div class="panel-header d-flex justify-content-between align-items-center">
+                            <h2 class="panel-title mb-0">Upload Test / Exam Marks</h2>
+                            <a th:href="@{/teacher/reports/view}" class="btn btn-sm btn-erp-outline">
+                                <i class="bi bi-eye me-1"></i> View Reports
+                            </a>
+                        </div>
+                        <div class="panel-body">
+                            <!-- Empty Batches Warning -->
+                            <div class="alert alert-warning d-flex align-items-center mb-3" th:if="${#lists.isEmpty(batches)}">
+                                <i class="bi bi-exclamation-triangle me-2 fs-5"></i>
+                                <span>No class batches assigned to your faculty account. Please request admin assignment.</span>
+                            </div>
+
+                            <form th:action="@{/teacher/reports/mark}" method="get" th:if="${!#lists.isEmpty(batches)}">
+                                <div class="mb-3">
+                                    <label for="batchId" class="form-label">Select Class Batch <span class="text-danger">*</span></label>
+                                    <select id="batchId" name="batchId" class="form-select form-control" required>
+                                        <option value="">-- Choose Class Batch --</option>
+                                        <option th:each="b : ${batches}" th:value="${b.id}" th:text="${b.batchName + ' (' + b.timing + ')'}">Class 10</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Subject Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="subject" name="subject" th:value="${defaultSubject}" class="form-control" placeholder="e.g. Mathematics, Physics Unit 1" required>
+                                </div>
+
+                                <div class="row g-2 mb-4">
+                                    <div class="col-12 col-sm-6">
+                                        <label for="examDate" class="form-label">Exam Date <span class="text-danger">*</span></label>
+                                        <input type="date" id="examDate" name="examDate" th:value="${defaultDate}" class="form-control" required>
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label for="maxMarks" class="form-label">Maximum Marks <span class="text-danger">*</span></label>
+                                        <input type="number" id="maxMarks" name="maxMarks" value="100" min="1" max="1000" class="form-control" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-erp-primary w-100 py-2">
+                                    <i class="bi bi-arrow-right-circle me-1"></i> Load Students to Enter Marks
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

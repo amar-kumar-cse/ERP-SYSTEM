@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Records - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Fee Ledger')}"></div>
+
+        <div class="erp-content">
+            <!-- Flash Alerts -->
+            <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span th:text="${successMsg}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Stats & Filter Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Paid Invoices</div>
+                            <div class="stat-value text-success" th:text="${paidCount}">0</div>
+                            <div class="stat-sub text-muted">For selected period</div>
+                        </div>
+                        <div class="stat-icon-wrapper icon-green">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Pending Dues</div>
+                            <div class="stat-value text-primary" th:text="${dueCount}">0</div>
+                            <div class="stat-sub text-muted">Awaiting fee collection</div>
+                        </div>
+                        <div class="stat-icon-wrapper icon-blue">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-label">Overdue Bills</div>
+                            <div class="stat-value text-danger" th:text="${totalOverdueCount}">0</div>
+                            <div class="stat-sub text-danger">Past payment due date</div>
+                        </div>
+                        <div class="stat-icon-wrapper icon-rose">
+                            <i class="bi bi-exclamation-octagon-fill"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="panel-card mb-4">
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <h2 class="panel-title mb-0">Filter Invoices</h2>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/admin/fee/generate}" class="btn btn-erp-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Generate Monthly Fees
+                        </a>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <form th:action="@{/admin/fee}" method="get" class="row g-3 align-items-end">
+                        <div class="col-12 col-md-4">
+                            <label for="batchId" class="form-label">Class Batch</label>
+                            <select id="batchId" name="batchId" class="form-select form-control">
+                                <option value="">-- All Batches --</option>
+                                <option th:each="b : ${batches}" 
+                                        th:value="${b.id}" 
+                                        th:text="${b.batchName}"
+                                        th:selected="${b.id == selectedBatchId}">Class 10</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label for="month" class="form-label">Month</label>
+                            <select id="month" name="month" class="form-select form-control">
+                                <option value="1" th:selected="${selectedMonth == 1}">January</option>
+                                <option value="2" th:selected="${selectedMonth == 2}">February</option>
+                                <option value="3" th:selected="${selectedMonth == 3}">March</option>
+                                <option value="4" th:selected="${selectedMonth == 4}">April</option>
+                                <option value="5" th:selected="${selectedMonth == 5}">May</option>
+                                <option value="6" th:selected="${selectedMonth == 6}">June</option>
+                                <option value="7" th:selected="${selectedMonth == 7}">July</option>
+                                <option value="8" th:selected="${selectedMonth == 8}">August</option>
+                                <option value="9" th:selected="${selectedMonth == 9}">September</option>
+                                <option value="10" th:selected="${selectedMonth == 10}">October</option>
+                                <option value="11" th:selected="${selectedMonth == 11}">November</option>
+                                <option value="12" th:selected="${selectedMonth == 12}">December</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" id="year" name="year" th:value="${selectedYear}" min="2020" max="2030" class="form-control">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button type="submit" class="btn btn-erp-primary w-100">
+                                <i class="bi bi-funnel me-1"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Fee Records Table -->
+            <div class="panel-card">
+                <div class="panel-header d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title mb-0">Student Fee Roster</h3>
+                    <span class="badge-flat badge-info-flat" th:text="${#lists.size(feeList) + ' Records'}">0 Records</span>
+                </div>
+                <div class="panel-body p-0 table-responsive">
+                    <table class="table-flat mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Roll No</th>
+                                <th>Batch</th>
+                                <th>Total Due</th>
+                                <th>Amount Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Payment Mode</th>
+                                <th class="text-end" style="width: 100px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(feeList)}">
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bi bi-receipt-cutoff fs-2 d-block mb-2 text-secondary"></i>
+                                    No fee records found for the selected filter. Click "Generate Monthly Fees" to create invoices.
+                                </td>
+                            </tr>
+                            <!-- Data Row -->
+                            <th:block th:each="f : ${feeList}">
+                                <tr>
+                                    <td class="fw-semibold text-dark" th:text="${f.studentName}">Rahul Sharma</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace" th:text="${f.rollNo}">SHK-2026-001</span>
+                                    </td>
+                                    <td th:text="${f.batchName}">Class 10</td>
+                                    <td class="fw-bold" th:text="'₹' + ${f.amountDue}">₹1500.00</td>
+                                    <td class="text-success fw-bold" th:text="'₹' + ${f.amountPaid}">₹1500.00</td>
+                                    <td class="fw-bold" 
+                                        th:classappend="${f.balance > 0} ? 'text-danger' : 'text-muted'" 
+                                        th:text="'₹' + ${f.balance}">
+                                        ₹0.00
+                                    </td>
+                                    <td>
+                                        <span th:if="${f.status.name() == 'PAID'}" class="badge-flat badge-success-flat">PAID</span>
+                                        <span th:if="${f.status.name() == 'DUE'}" class="badge-flat badge-warning-flat">DUE</span>
+                                        <span th:if="${f.status.name() == 'PARTIAL'}" class="badge-flat badge-info-flat">PARTIAL</span>
+                                        <span th:if="${f.status.name() == 'OVERDUE'}" class="badge-flat badge-danger-flat">OVERDUE</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-secondary small" th:text="${f.paymentMode != null ? f.paymentMode : '-'}">UPI</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                th:data-bs-target="'#edit-fee-' + ${f.id}" 
+                                                aria-expanded="false" 
+                                                title="Update Payment">
+                                            <i class="bi bi-pencil-square me-1"></i> Update
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Inline Edit Collapse Row -->
+                                <tr class="collapse bg-light" th:id="'edit-fee-' + ${f.id}">
+                                    <td colspan="9" class="p-3">
+                                        <form th:action="@{/admin/fee/update/{feeId}(feeId=${f.id})}" method="post" class="row g-2 align-items-end">
+                                            <input type="hidden" name="batchId" th:value="${selectedBatchId}">
+                                            <input type="hidden" name="month" th:value="${selectedMonth}">
+                                            <input type="hidden" name="year" th:value="${selectedYear}">
+
+                                            <div class="col-12 col-sm-6 col-md-2">
+                                                <label class="form-label small mb-1">Paid Amount (₹)</label>
+                                                <input type="number" name="amountPaid" th:value="${f.amountPaid}" min="0" step="0.01" class="form-control form-control-sm" required>
+                                            </div>
+                                            <div class="col-12 col-sm-6 col-md-2">
+                                                <label class="form-label small mb-1">Payment Mode</label>
+                                                <select name="paymentMode" class="form-select form-select-sm">
+                                                    <option value="Cash" th:selected="${f.paymentMode == 'Cash'}">Cash</option>
+                                                    <option value="UPI" th:selected="${f.paymentMode == 'UPI'}">UPI (GPay/PhonePe)</option>
+                                                    <option value="Bank Transfer" th:selected="${f.paymentMode == 'Bank Transfer'}">Bank Transfer</option>
+                                                    <option value="Cheque" th:selected="${f.paymentMode == 'Cheque'}">Cheque</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-sm-6 col-md-2">
+                                                <label class="form-label small mb-1">Status Override</label>
+                                                <select name="status" class="form-select form-select-sm">
+                                                    <option value="">Auto-Detect</option>
+                                                    <option value="PAID" th:selected="${f.status.name() == 'PAID'}">PAID</option>
+                                                    <option value="PARTIAL" th:selected="${f.status.name() == 'PARTIAL'}">PARTIAL</option>
+                                                    <option value="DUE" th:selected="${f.status.name() == 'DUE'}">DUE</option>
+                                                    <option value="OVERDUE" th:selected="${f.status.name() == 'OVERDUE'}">OVERDUE</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-sm-6 col-md-2">
+                                                <label class="form-label small mb-1">Payment Date</label>
+                                                <input type="date" name="paidDate" th:value="${f.paidDate}" class="form-control form-control-sm">
+                                            </div>
+                                            <div class="col-12 col-sm-8 col-md-3">
+                                                <label class="form-label small mb-1">Remarks / Transaction Ref</label>
+                                                <input type="text" name="remarks" th:value="${f.remarks}" placeholder="e.g. UPI Ref #912384" class="form-control form-control-sm">
+                                            </div>
+                                            <div class="col-12 col-sm-4 col-md-1 text-end">
+                                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                                    <i class="bi bi-check-lg"></i> Save
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </th:block>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

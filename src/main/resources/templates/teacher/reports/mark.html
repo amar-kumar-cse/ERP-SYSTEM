@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Test Marks - Shiksha ERP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+</head>
+<body>
+
+<div class="erp-container">
+    <!-- Sidebar Fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar(${activePage})}"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="erp-main">
+        <!-- Topbar Fragment -->
+        <div th:replace="~{fragments/topbar :: topbar('Enter Test Marks')}"></div>
+
+        <div class="erp-content">
+            <!-- Breadcrumbs -->
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <a th:href="@{/teacher/reports}" class="btn btn-sm btn-erp-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Change Exam / Batch
+                </a>
+                <a th:href="@{/teacher/reports/view(batchId=${batch.id}, subject=${bulkReportDto.subject})}" class="btn btn-sm btn-erp-outline">
+                    <i class="bi bi-eye me-1"></i> View Existing Reports
+                </a>
+            </div>
+
+            <!-- Error Banner -->
+            <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <span th:text="${errorMsg}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Exam Details Header Card -->
+            <div class="panel-card mb-4">
+                <div class="panel-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <div class="stat-label mb-1">Batch &amp; Subject</div>
+                        <h2 class="h5 fw-bold text-dark mb-1">
+                            <span th:text="${bulkReportDto.subject}">Mathematics</span>
+                            <span class="text-secondary fw-normal"> — </span>
+                            <span th:text="${batch.batchName}">Class 10 - Batch A</span>
+                        </h2>
+                        <div class="text-secondary small">
+                            <i class="bi bi-calendar-event me-1"></i> Exam Date: 
+                            <strong class="text-dark" th:text="${#temporals.format(bulkReportDto.examDate, 'dd MMMM yyyy')}">15 Aug 2026</strong>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-award me-1"></i> Max Marks: 
+                            <strong class="text-dark" th:text="${bulkReportDto.maxMarks}">100</strong>
+                        </div>
+                    </div>
+
+                    <span class="badge-flat badge-info-flat" th:text="${studentCount + ' Students'}">0 Students</span>
+                </div>
+            </div>
+
+            <!-- Empty Students State -->
+            <div class="panel-card p-5 text-center" th:if="${studentCount == 0}">
+                <i class="bi bi-people fs-1 text-secondary mb-3 d-block"></i>
+                <h5 class="fw-bold">No Students Enrolled In This Batch</h5>
+                <p class="text-muted small">Please enroll students into this class batch before entering marks.</p>
+                <a th:href="@{/teacher/reports}" class="btn btn-erp-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Batch Selection
+                </a>
+            </div>
+
+            <!-- Marks Entry Form -->
+            <div class="panel-card" th:if="${studentCount > 0}">
+                <div class="panel-header">
+                    <h3 class="panel-title">Student Marks Roster</h3>
+                </div>
+
+                <form th:action="@{/teacher/reports/mark}" th:object="${bulkReportDto}" method="post">
+                    <input type="hidden" th:field="*{classBatchId}">
+                    <input type="hidden" th:field="*{subject}">
+                    <input type="hidden" th:field="*{examDate}">
+                    <input type="hidden" id="globalMaxMarks" th:field="*{maxMarks}">
+
+                    <div class="panel-body p-0 table-responsive">
+                        <table class="table-flat mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">S.No</th>
+                                    <th>Student Name</th>
+                                    <th>Roll Number</th>
+                                    <th style="width: 170px;">Obtained Marks</th>
+                                    <th style="width: 110px;">Percentage</th>
+                                    <th>Remarks / Note (Optional)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="entry, i : *{entries}">
+                                    <td class="text-muted fw-semibold" th:text="${i.count}">1</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark" th:text="${entry.studentName}">Rahul Sharma</div>
+                                        <input type="hidden" th:field="*{entries[__${i.index}__].studentId}">
+                                        <input type="hidden" th:field="*{entries[__${i.index}__].studentName}">
+                                        <input type="hidden" th:field="*{entries[__${i.index}__].rollNo}">
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace" th:text="${entry.rollNo}">SHK-2026-001</span>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" 
+                                                   class="form-control marks-input" 
+                                                   th:field="*{entries[__${i.index}__].marks}"
+                                                   min="0" 
+                                                   th:max="${bulkReportDto.maxMarks}"
+                                                   placeholder="0"
+                                                   th:data-index="${i.index}"
+                                                   oninput="calculatePercentage(this)"
+                                                   required>
+                                            <span class="input-group-text text-muted" th:text="'/ ' + ${bulkReportDto.maxMarks}">/ 100</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span th:id="'pct-badge-' + ${i.index}" class="badge-flat bg-light text-dark border">
+                                            - %
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               class="form-control form-control-sm" 
+                                               th:field="*{entries[__${i.index}__].remarks}"
+                                               placeholder="e.g. Excellent / Needs revision in Algebra">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bottom Actions -->
+                    <div class="panel-body bg-light border-top d-flex justify-content-between align-items-center">
+                        <span class="text-secondary small">
+                            <i class="bi bi-info-circle me-1 text-primary"></i> Report card marks will be instantly visible on the Parent portal.
+                        </span>
+                        <div class="d-flex gap-2">
+                            <a th:href="@{/teacher/reports}" class="btn btn-erp-outline">Cancel</a>
+                            <button type="submit" class="btn btn-erp-primary px-4">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> Save Marks
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function calculatePercentage(inputElement) {
+        const index = inputElement.getAttribute('data-index');
+        const maxMarks = parseFloat(document.getElementById('globalMaxMarks').value) || 100;
+        const marks = parseFloat(inputElement.value);
+        const badge = document.getElementById('pct-badge-' + index);
+
+        if (!badge) return;
+
+        if (isNaN(marks) || marks < 0) {
+            badge.textContent = '- %';
+            badge.className = 'badge-flat bg-light text-dark border';
+            return;
+        }
+
+        const pct = ((marks / maxMarks) * 100).toFixed(1);
+        badge.textContent = pct + '%';
+
+        if (pct >= 75) {
+            badge.className = 'badge-flat badge-success-flat';
+        } else if (pct >= 50) {
+            badge.className = 'badge-flat badge-warning-flat';
+        } else {
+            badge.className = 'badge-flat badge-danger-flat';
+        }
+    }
+
+    // Initialize percentages on page load if pre-filled
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.marks-input').forEach(input => {
+            if (input.value !== '') {
+                calculatePercentage(input);
+            }
+        });
+    });
+</script>
+</body>
+</html>
