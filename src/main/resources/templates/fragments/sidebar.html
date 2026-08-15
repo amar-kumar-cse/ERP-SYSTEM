@@ -8,13 +8,18 @@
 <aside class="erp-sidebar" th:fragment="sidebar(activePage)">
     <!-- App Brand Logo & Name -->
     <a th:href="@{/dashboard}" class="sidebar-brand">
-        <i class="bi bi-mortarboard-fill"></i>
-        <span>Shiksha ERP</span>
+        <div class="sidebar-brand-icon">
+            <i class="bi bi-mortarboard-fill"></i>
+        </div>
+        <div>
+            <div class="sidebar-brand-text">Shiksha ERP</div>
+            <span class="sidebar-brand-tag">Institute Suite</span>
+        </div>
     </a>
 
     <!-- ADMIN Navigation -->
     <div sec:authorize="hasRole('ADMIN')">
-        <div class="sidebar-role-pill">Admin Portal</div>
+        <div class="sidebar-role-pill">Admin Workspace</div>
         <ul class="nav-links">
             <li th:classappend="${activePage == 'dashboard'} ? 'active'">
                 <a th:href="@{/admin/dashboard}">
@@ -48,7 +53,7 @@
             </li>
             <li th:classappend="${activePage == 'tickets'} ? 'active'">
                 <a th:href="@{/admin/tickets}" class="d-flex justify-content-between align-items-center">
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-chat-square-dots-fill"></i>
                         <span>Support Tickets</span>
                     </div>
@@ -68,7 +73,7 @@
 
     <!-- TEACHER Navigation -->
     <div sec:authorize="hasRole('TEACHER')">
-        <div class="sidebar-role-pill">Teacher Portal</div>
+        <div class="sidebar-role-pill">Faculty Workspace</div>
         <ul class="nav-links">
             <li th:classappend="${activePage == 'dashboard'} ? 'active'">
                 <a th:href="@{/teacher/dashboard}">
@@ -111,7 +116,7 @@
 
     <!-- PARENT / STUDENT Navigation -->
     <div sec:authorize="hasRole('PARENT')">
-        <div class="sidebar-role-pill">Parent Portal</div>
+        <div class="sidebar-role-pill">Parent Workspace</div>
         <ul class="nav-links">
             <li th:classappend="${activePage == 'dashboard'} ? 'active'">
                 <a th:href="@{/student/dashboard}">
@@ -152,15 +157,18 @@
         </ul>
     </div>
 
-    <!-- Sidebar Bottom: Logged-in User Info + Logout -->
+    <!-- Sidebar Bottom: User Card + Logout -->
     <div class="sidebar-user-footer">
-        <div class="user-details">
-            <div class="user-name" sec:authentication="name">Username</div>
-            <div class="user-role" sec:authorize="hasRole('ADMIN')">Administrator</div>
-            <div class="user-role" sec:authorize="hasRole('TEACHER')">Faculty</div>
-            <div class="user-role" sec:authorize="hasRole('PARENT')">Parent</div>
+        <div class="sidebar-user-avatar">
+            <i class="bi bi-person-fill"></i>
         </div>
-        <form th:action="@{/logout}" method="post" class="d-inline">
+        <div class="sidebar-user-info">
+            <div class="sidebar-user-name" sec:authentication="name">Username</div>
+            <div class="sidebar-user-role" sec:authorize="hasRole('ADMIN')">Administrator</div>
+            <div class="sidebar-user-role" sec:authorize="hasRole('TEACHER')">Faculty</div>
+            <div class="sidebar-user-role" sec:authorize="hasRole('PARENT')">Parent</div>
+        </div>
+        <form th:action="@{/logout}" method="post" class="d-inline m-0">
             <button type="submit" class="btn-logout-sidebar" title="Logout">
                 <i class="bi bi-box-arrow-right"></i>
             </button>

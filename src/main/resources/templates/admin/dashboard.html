@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Shiksha ERP</title>
+    <title>Admin Overview - Shiksha ERP</title>
+    <!-- Fonts & CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
 </head>
 <body>
 
@@ -20,14 +24,14 @@
         <div th:replace="~{fragments/topbar :: topbar('Admin Overview')}"></div>
 
         <div class="erp-content">
-            <!-- Flat Stat Cards Row -->
+            <!-- 4-Column Bento Stat Cards Row -->
             <div class="row g-3 mb-4">
                 <div class="col-12 col-sm-6 col-xl-3">
                     <div class="stat-card">
                         <div>
                             <div class="stat-label">Total Students</div>
                             <div class="stat-value" th:text="${totalStudents}">0</div>
-                            <div class="stat-sub text-success"><i class="bi bi-people"></i> Enrolled Students</div>
+                            <div class="stat-sub"><i class="bi bi-person-check text-primary"></i> Enrolled Students</div>
                         </div>
                         <div class="stat-icon-wrapper icon-blue">
                             <i class="bi bi-people-fill"></i>
@@ -40,7 +44,7 @@
                         <div>
                             <div class="stat-label">Total Faculty</div>
                             <div class="stat-value" th:text="${totalTeachers}">0</div>
-                            <div class="stat-sub text-muted">Teaching Staff</div>
+                            <div class="stat-sub"><i class="bi bi-mortarboard text-success"></i> Teaching Staff</div>
                         </div>
                         <div class="stat-icon-wrapper icon-green">
                             <i class="bi bi-person-badge-fill"></i>
@@ -53,15 +57,16 @@
                         <div>
                             <div class="stat-label">Fee Overdue</div>
                             <div class="stat-value" 
-                                 th:classappend="${feeOverdueCount > 0} ? 'text-danger' : 'text-success'"
-                                 th:text="${feeOverdueCount}">
+                                 th:classappend="${totalOverdueFees > 0} ? 'text-danger' : 'text-success'"
+                                 th:text="${totalOverdueFees}">
                                 0
                             </div>
-                            <div class="stat-sub" th:classappend="${feeOverdueCount > 0} ? 'text-danger' : 'text-success'">
-                                <i class="bi bi-receipt"></i> <span th:text="${feeOverdueCount > 0 ? 'Pending Invoices' : 'All Clear'}">Pending Invoices</span>
+                            <div class="stat-sub" th:classappend="${totalOverdueFees > 0} ? 'text-danger' : 'text-success'">
+                                <span th:if="${totalOverdueFees > 0}"><i class="bi bi-exclamation-octagon"></i> Invoices Pending</span>
+                                <span th:if="${totalOverdueFees == 0}"><i class="bi bi-check-circle"></i> All Clear</span>
                             </div>
                         </div>
-                        <div class="stat-icon-wrapper" th:classappend="${feeOverdueCount > 0} ? 'icon-rose' : 'icon-green'">
+                        <div class="stat-icon-wrapper" th:classappend="${totalOverdueFees > 0} ? 'icon-rose' : 'icon-green'">
                             <i class="bi bi-cash-stack"></i>
                         </div>
                     </div>
@@ -77,23 +82,27 @@
                                 0
                             </div>
                             <div class="stat-sub" th:classappend="${openTicketsCount > 0} ? 'text-warning' : 'text-success'">
-                                <i class="bi bi-chat-square-dots"></i> Support Inquiries
+                                <span th:if="${openTicketsCount > 0}"><i class="bi bi-clock-history"></i> Support Inquiries</span>
+                                <span th:if="${openTicketsCount == 0}"><i class="bi bi-check-all"></i> Resolved</span>
                             </div>
                         </div>
                         <div class="stat-icon-wrapper" th:classappend="${openTicketsCount > 0} ? 'icon-amber' : 'icon-green'">
-                            <i class="bi bi-headset"></i>
+                            <i class="bi bi-chat-square-text-fill"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Two-Column Section: Batches & Quick Actions -->
+            <!-- Bento Main Grid: 8 Cols (Batches Table) + 4 Cols (Quick Actions & System Info) -->
             <div class="row g-4">
                 <div class="col-12 col-lg-8">
-                    <div class="panel-card">
+                    <!-- Active Batches & Schedules Table -->
+                    <div class="panel-card mb-4">
                         <div class="panel-header d-flex justify-content-between align-items-center">
-                            <h2 class="panel-title">Active Batches &amp; Schedules</h2>
-                            <a th:href="@{/admin/classes}" class="btn btn-sm btn-erp-outline">View All</a>
+                            <h2 class="panel-title mb-0">
+                                <i class="bi bi-book text-primary"></i> Active Batches &amp; Schedules
+                            </h2>
+                            <a th:href="@{/admin/classes}" class="btn btn-sm btn-erp-outline rounded-pill">View All</a>
                         </div>
                         <div class="panel-body p-0 table-responsive">
                             <table class="table-flat mb-0">
@@ -102,24 +111,58 @@
                                         <th>Batch Name</th>
                                         <th>Timing</th>
                                         <th>Days</th>
-                                        <th>Enrolled</th>
+                                        <th class="text-end">Enrolled</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:if="${#lists.isEmpty(runningBatches)}">
+                                    <tr th:if="${#lists.isEmpty(recentBatches)}">
                                         <td colspan="4" class="text-center py-4 text-muted">
-                                            No active batches available.
+                                            No active class batches created yet.
                                         </td>
                                     </tr>
-                                    <tr th:each="b : ${runningBatches}">
+                                    <tr th:each="b : ${recentBatches}">
                                         <td class="fw-semibold text-dark" th:text="${b.batchName}">Class 10 - Batch A</td>
                                         <td th:text="${b.timing}">4:00 PM - 6:00 PM</td>
                                         <td>
                                             <span class="badge bg-light text-dark border" th:text="${b.days}">Mon, Wed, Fri</span>
                                         </td>
-                                        <td>
-                                            <span class="badge-flat badge-success-flat" th:text="${b.studentCount + ' Students'}">12 Students</span>
+                                        <td class="text-end">
+                                            <span class="badge-flat badge-primary-flat" th:text="${b.studentCount + ' Students'}">12 Students</span>
                                         </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Enrolled Students Snapshot -->
+                    <div class="panel-card" th:if="${!#lists.isEmpty(recentStudents)}">
+                        <div class="panel-header d-flex justify-content-between align-items-center">
+                            <h2 class="panel-title mb-0">
+                                <i class="bi bi-people text-success"></i> Recently Enrolled Students
+                            </h2>
+                            <a th:href="@{/admin/students}" class="btn btn-sm btn-erp-outline rounded-pill">Manage All</a>
+                        </div>
+                        <div class="panel-body p-0 table-responsive">
+                            <table class="table-flat mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Roll Number</th>
+                                        <th>Batch</th>
+                                        <th>Parent Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="s : ${recentStudents}">
+                                        <td class="fw-semibold text-dark" th:text="${s.name}">Aarav Sharma</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border font-monospace" th:text="${s.rollNo}">SHK-2026-001</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge-flat badge-info-flat" th:text="${s.batchName != null ? s.batchName : 'Unassigned'}">Class 10</span>
+                                        </td>
+                                        <td th:text="${s.parentPhone != null ? s.parentPhone : '-'}">9876543210</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -127,51 +170,58 @@
                     </div>
                 </div>
 
+                <!-- Right Column: Quick Actions & System Info -->
                 <div class="col-12 col-lg-4">
+                    <!-- Quick Actions Card -->
                     <div class="panel-card mb-4">
                         <div class="panel-header">
-                            <h2 class="panel-title">Quick Actions</h2>
+                            <h2 class="panel-title">
+                                <i class="bi bi-lightning-charge text-warning"></i> Quick Actions
+                            </h2>
                         </div>
                         <div class="panel-body d-flex flex-column gap-2">
                             <a th:href="@{/admin/students/add}" class="btn-erp-outline w-100 justify-content-start">
-                                <i class="bi bi-person-plus-fill text-primary"></i>
+                                <i class="bi bi-person-plus text-primary fs-5"></i>
                                 <span>Add New Student</span>
                             </a>
                             <a th:href="@{/admin/teachers/add}" class="btn-erp-outline w-100 justify-content-start">
-                                <i class="bi bi-person-video3 text-success"></i>
+                                <i class="bi bi-person-badge text-success fs-5"></i>
                                 <span>Register Faculty</span>
                             </a>
                             <a th:href="@{/admin/classes/add}" class="btn-erp-outline w-100 justify-content-start">
-                                <i class="bi bi-calendar-plus-fill text-info"></i>
+                                <i class="bi bi-plus-circle text-info fs-5"></i>
                                 <span>Create Class Batch</span>
                             </a>
                             <a th:href="@{/admin/fee/generate}" class="btn-erp-outline w-100 justify-content-start">
-                                <i class="bi bi-receipt-cutoff text-warning"></i>
+                                <i class="bi bi-cash-stack text-warning fs-5"></i>
                                 <span>Generate Monthly Fees</span>
                             </a>
                             <a th:href="@{/admin/tickets}" class="btn-erp-outline w-100 justify-content-start">
-                                <i class="bi bi-headset text-danger"></i>
+                                <i class="bi bi-headset text-danger fs-5"></i>
                                 <span>Manage Support Tickets</span>
                             </a>
                         </div>
                     </div>
 
+                    <!-- System Information Bento Card -->
                     <div class="panel-card">
                         <div class="panel-header">
-                            <h2 class="panel-title">System Information</h2>
+                            <h2 class="panel-title">
+                                <i class="bi bi-cpu text-purple"></i> System Information
+                            </h2>
                         </div>
                         <div class="panel-body">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-secondary">App Version</span>
-                                <span class="fw-semibold">Shiksha ERP 1.0 Enterprise</span>
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <span class="text-secondary small">App Version</span>
+                                <span class="badge bg-light text-dark border font-monospace">Shiksha ERP 1.0</span>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-secondary">Automated Schedulers</span>
-                                <span class="badge-flat badge-success-flat">Active (8 AM / 9 AM)</span>
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <span class="text-secondary small">Automated Schedulers</span>
+                                <span class="badge-flat badge-success-flat">Active (01:00 AM)</span>
                             </div>
-                            <div class="d-flex justify-content-between">
-                                <span class="text-secondary">Database Status</span>
-                                <span class="badge-flat badge-info-flat">Persistent / Connected</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-secondary small">Database Status</span>
+                                <span class="badge-flat badge-primary-flat">Persistent Connected</span>
                             </div>
                         </div>
                     </div>

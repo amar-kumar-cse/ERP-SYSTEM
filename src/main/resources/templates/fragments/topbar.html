@@ -6,26 +6,26 @@
 
 <!-- Topbar Fragment -->
 <header class="erp-topbar" th:fragment="topbar(pageTitle)">
-    <div class="topbar-title-section">
+    <div class="topbar-left">
         <h1 class="page-title" th:text="${pageTitle}">Dashboard</h1>
         
-        <!-- Portal Tag badge -->
+        <!-- Portal Tag Badge -->
         <span sec:authorize="hasRole('ADMIN')" class="portal-badge badge-admin">Admin Portal</span>
         <span sec:authorize="hasRole('TEACHER')" class="portal-badge badge-teacher">Faculty Portal</span>
         <span sec:authorize="hasRole('PARENT')" class="portal-badge badge-parent">Parent Portal</span>
     </div>
 
-    <div class="topbar-actions">
-        <!-- User Badge & Logout Form -->
+    <div class="topbar-right">
+        <!-- User Profile Pill & Logout Button -->
         <div class="d-flex align-items-center gap-3">
-            <div class="d-none d-md-flex align-items-center gap-2">
-                <i class="bi bi-person-circle fs-5 text-secondary"></i>
-                <span class="fw-semibold text-dark" sec:authentication="name">User</span>
+            <div class="d-none d-md-flex align-items-center gap-2 bg-light border px-3 py-1 rounded-pill">
+                <i class="bi bi-person-circle text-primary"></i>
+                <span class="fw-semibold text-dark small" sec:authentication="name">User</span>
             </div>
             
             <form th:action="@{/logout}" method="post" class="d-inline m-0">
-                <button type="submit" class="btn btn-sm btn-erp-outline">
-                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                <button type="submit" class="btn btn-sm btn-erp-outline rounded-pill px-3">
+                    <i class="bi bi-box-arrow-right me-1 text-danger"></i> Logout
                 </button>
             </form>
         </div>
