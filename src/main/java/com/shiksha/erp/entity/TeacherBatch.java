@@ -10,7 +10,11 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
     name = "teacher_batches",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"teacher_id", "class_batch_id"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"teacher_id", "class_batch_id"}),
+    indexes = {
+        @Index(name = "idx_tb_teacher", columnList = "teacher_id"),
+        @Index(name = "idx_tb_batch", columnList = "class_batch_id")
+    }
 )
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -24,7 +28,6 @@ public class TeacherBatch {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ek teacher ek batch mein sirf ek baar assign hoga
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;

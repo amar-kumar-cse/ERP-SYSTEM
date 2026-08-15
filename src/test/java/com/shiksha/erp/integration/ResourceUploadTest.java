@@ -5,6 +5,7 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Resource;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.enums.ResourceType;
+import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.ResourceRepository;
 import com.shiksha.erp.service.ResourceService;
@@ -72,7 +73,7 @@ class ResourceUploadTest {
                 .file(exeFile)
                 .build();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        BusinessValidationException ex = assertThrows(BusinessValidationException.class, () ->
                 resourceService.saveResource(dto, teacher)
         );
 
@@ -98,7 +99,7 @@ class ResourceUploadTest {
                 .file(shFile)
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(BusinessValidationException.class, () ->
                 resourceService.saveResource(dto, teacher)
         );
         verify(resourceRepository, never()).save(any(Resource.class));
@@ -123,7 +124,7 @@ class ResourceUploadTest {
                 .file(largeFile)
                 .build();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        BusinessValidationException ex = assertThrows(BusinessValidationException.class, () ->
                 resourceService.saveResource(dto, teacher)
         );
 

@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
     name = "attendances",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "attendance_date"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "attendance_date"}),
+    indexes = {
+        @Index(name = "idx_att_student_date", columnList = "student_id, attendance_date"),
+        @Index(name = "idx_att_batch_date", columnList = "class_batch_id, attendance_date"),
+        @Index(name = "idx_att_status", columnList = "status")
+    }
 )
 @EntityListeners(AuditingEntityListener.class)
 @Getter

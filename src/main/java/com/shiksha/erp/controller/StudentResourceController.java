@@ -4,6 +4,9 @@ import com.shiksha.erp.dto.ResourceResponseDto;
 import com.shiksha.erp.entity.Resource;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.enums.ResourceType;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.service.ParentStudentHelper;
 import com.shiksha.erp.service.ResourceService;
 import lombok.RequiredArgsConstructor;
@@ -73,20 +76,24 @@ public class StudentResourceController {
         Student student = parentStudentHelper.getStudentByParentUsername(auth.getName());
         Resource resource = resourceService.getResourceForDownload(id);
 
-        // Security check: student must be in same class batch
         if (student.getClassBatch() == null || !student.getClassBatch().getId().equals(resource.getClassBatch().getId())) {
-            return ResponseEntity.status(403).body("Unauthorized: You do not belong to this resource's batch");
+            throw new UnauthorizedAccessException("Access Denied: You do not belong to this study material's batch");
         }
 
         if (resource.getResourceType() == ResourceType.LINK) {
             return "redirect:" + resource.getFileUrl();
         }
 
-        Path filePath = Paths.get(uploadDir).resolve(resource.getFileUrl()).normalize();
-        File file = filePath.toFile();
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path filePath = uploadPath.resolve(resource.getFileUrl()).normalize();
 
+        if (!filePath.startsWith(uploadPath)) {
+            throw new BusinessValidationException("Invalid file path detected");
+        }
+
+        File file = filePath.toFile();
         if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Resource file not found on disk: " + resource.getOriginalFileName());
         }
 
         String mimeType = URLConnection.guessContentTypeFromName(resource.getOriginalFileName());

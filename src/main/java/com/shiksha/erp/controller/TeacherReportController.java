@@ -7,6 +7,7 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Report;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
+import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.ReportRepository;
 import com.shiksha.erp.repository.StudentRepository;
@@ -78,11 +79,10 @@ public class TeacherReportController {
         }
 
         ClassBatch batch = classBatchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Class batch not found: " + batchId));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", batchId));
 
         List<Student> students = studentRepository.findByClassBatchIdOrderByNameAsc(batchId);
 
-        // pre-fill existing marks if already entered
         List<StudentMarkEntryDto> entries = students.stream().map(student -> {
             Optional<Report> existing = reportRepository.findByStudentIdAndSubjectAndExamDate(student.getId(), subject.trim(), examDate);
             return StudentMarkEntryDto.builder()

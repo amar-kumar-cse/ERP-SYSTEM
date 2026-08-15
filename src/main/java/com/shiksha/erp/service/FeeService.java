@@ -6,6 +6,8 @@ import com.shiksha.erp.dto.FeeUpdateDto;
 import com.shiksha.erp.entity.Fee;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.enums.FeeStatus;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.FeeRepository;
 import com.shiksha.erp.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +34,20 @@ public class FeeService {
     private final EmailService emailService;
 
     @Transactional
-    public int generateMonthlyFees(FeeGenerateDto dto) {
-        List<Student> targetStudents;
+    public synchronized int generateMonthlyFees(FeeGenerateDto dto) {
+        if (dto.getAmountDue() == null || dto.getAmountDue().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessValidationException("Fee amount due must be greater than zero");
+        }
 
+        if (dto.getMonth() < 1 || dto.getMonth() > 12) {
+            throw new BusinessValidationException("Month must be between 1 and 12");
+        }
+
+        if (dto.getYear() < 2000 || dto.getYear() > 2100) {
+            throw new BusinessValidationException("Invalid year provided");
+        }
+
+        List<Student> targetStudents;
         if (dto.getClassBatchId() != null) {
             targetStudents = studentRepository.findByClassBatchId(dto.getClassBatchId());
         } else {
@@ -44,7 +57,6 @@ public class FeeService {
         List<Fee> newFees = new ArrayList<>();
 
         for (Student student : targetStudents) {
-            // agar us month+year ka record already exist karta hai toh skip
             boolean exists = feeRepository.existsByStudentIdAndMonthAndYear(student.getId(), dto.getMonth(), dto.getYear());
             if (exists) {
                 log.debug("Fee record already exists for student: {} ({}/{})", student.getName(), dto.getMonth(), dto.getYear());
@@ -63,7 +75,6 @@ public class FeeService {
 
             newFees.add(fee);
 
-            // Send notification to parent if email exists
             if (student.getParentUser() != null && student.getParentUser().getEmail() != null) {
                 String monthName = Month.of(dto.getMonth()).getDisplayName(TextStyle.FULL, Locale.ENGLISH);
                 emailService.sendFeeGeneratedEmail(
@@ -87,12 +98,15 @@ public class FeeService {
     @Transactional
     public void updateFee(Long feeId, FeeUpdateDto dto) {
         Fee fee = feeRepository.findById(feeId)
-                .orElseThrow(() -> new RuntimeException("Fee record not found with id: " + feeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Fee", "id", feeId));
 
         BigDecimal paid = dto.getAmountPaid() != null ? dto.getAmountPaid() : BigDecimal.ZERO;
+        if (paid.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessValidationException("Amount paid cannot be negative");
+        }
+
         fee.setAmountPaid(paid);
 
-        // Status auto-computation
         if (dto.getStatus() != null) {
             fee.setStatus(dto.getStatus());
         } else {
@@ -104,7 +118,6 @@ public class FeeService {
             } else if (paid.compareTo(BigDecimal.ZERO) > 0 && paid.compareTo(fee.getAmountDue()) < 0) {
                 fee.setStatus(FeeStatus.PARTIAL);
             } else {
-                // 0 payment
                 if (fee.getDueDate() != null && fee.getDueDate().isBefore(LocalDate.now())) {
                     fee.setStatus(FeeStatus.OVERDUE);
                 } else {
@@ -134,7 +147,6 @@ public class FeeService {
         for (Fee fee : duePastFees) {
             fee.setStatus(FeeStatus.OVERDUE);
 
-            // Send notification to parent
             Student student = fee.getStudent();
             if (student != null && student.getParentUser() != null && student.getParentUser().getEmail() != null) {
                 String monthName = Month.of(fee.getMonth()).getDisplayName(TextStyle.FULL, Locale.ENGLISH);

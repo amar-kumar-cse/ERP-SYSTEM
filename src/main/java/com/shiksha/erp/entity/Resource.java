@@ -9,7 +9,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "resources")
+@Table(
+    name = "resources",
+    indexes = {
+        @Index(name = "idx_res_batch_upload", columnList = "class_batch_id, uploadedAt"),
+        @Index(name = "idx_res_subject", columnList = "subject")
+    }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter

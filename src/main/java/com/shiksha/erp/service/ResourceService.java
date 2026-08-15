@@ -6,6 +6,9 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Resource;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.enums.ResourceType;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,11 +47,11 @@ public class ResourceService {
     @Transactional
     public void saveResource(ResourceCreateDto dto, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(dto.getClassBatchId(), teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + dto.getClassBatchId());
         }
 
         ClassBatch batch = classBatchRepository.findById(dto.getClassBatchId())
-                .orElseThrow(() -> new RuntimeException("Class batch not found: " + dto.getClassBatchId()));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
 
         String fileUrl;
         String originalFileName = null;
@@ -57,11 +60,11 @@ public class ResourceService {
         if (dto.getResourceType() == ResourceType.FILE) {
             MultipartFile file = dto.getFile();
             if (file == null || file.isEmpty()) {
-                throw new IllegalArgumentException("Please select a file to upload");
+                throw new BusinessValidationException("Please select a file to upload");
             }
 
             if (file.getSize() > MAX_FILE_SIZE) {
-                throw new IllegalArgumentException("File size cannot exceed 10 MB");
+                throw new BusinessValidationException("File size cannot exceed 10 MB");
             }
 
             String origName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
@@ -72,17 +75,22 @@ public class ResourceService {
             }
 
             if (!ALLOWED_EXTENSIONS.contains(extension)) {
-                throw new IllegalArgumentException("Disallowed file type (." + extension + "). Allowed: PDF, DOC, PPT, XLS, ZIP, Images, TXT");
+                throw new BusinessValidationException("Disallowed file type (." + extension + "). Allowed: PDF, DOC, PPT, XLS, ZIP, Images, TXT");
             }
 
-            // Safe filename with UUID prefix
             String sanitizedName = origName.replaceAll("[^a-zA-Z0-9._-]", "_");
             String storedFileName = UUID.randomUUID().toString() + "_" + sanitizedName;
 
             try {
                 Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
                 Files.createDirectories(uploadPath);
-                Path targetLocation = uploadPath.resolve(storedFileName);
+                Path targetLocation = uploadPath.resolve(storedFileName).normalize();
+
+                // Path Traversal Security check
+                if (!targetLocation.startsWith(uploadPath)) {
+                    throw new BusinessValidationException("Invalid filename path traversal detected");
+                }
+
                 Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
                 fileUrl = storedFileName;
@@ -90,12 +98,11 @@ public class ResourceService {
                 fileSize = file.getSize();
             } catch (IOException ex) {
                 log.error("Could not upload file: {}", origName, ex);
-                throw new RuntimeException("Could not store file. Please try again!", ex);
+                throw new BusinessValidationException("Could not store file: " + ex.getMessage());
             }
         } else {
-            // LINK resource
             if (dto.getLinkUrl() == null || dto.getLinkUrl().isBlank()) {
-                throw new IllegalArgumentException("External resource URL is required");
+                throw new BusinessValidationException("External resource URL is required");
             }
             fileUrl = dto.getLinkUrl().trim();
         }
@@ -118,10 +125,13 @@ public class ResourceService {
     @Transactional(readOnly = true)
     public List<ResourceResponseDto> getResourcesForBatch(Long batchId, String subject, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
 
         List<Resource> resources = resourceRepository.findByClassBatchIdOrderByUploadedAtDesc(batchId);
+        if (resources.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         return resources.stream()
                 .filter(r -> subject == null || subject.isBlank() || r.getSubject().equalsIgnoreCase(subject.trim()))
@@ -136,6 +146,9 @@ public class ResourceService {
         }
 
         List<Resource> resources = resourceRepository.findByClassBatchIdOrderByUploadedAtDesc(batchId);
+        if (resources.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         return resources.stream()
                 .filter(r -> subject == null || subject.isBlank() || r.getSubject().equalsIgnoreCase(subject.trim()))
@@ -146,19 +159,21 @@ public class ResourceService {
     @Transactional
     public void deleteResource(Long id, Teacher teacher) {
         Resource resource = resourceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resource not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
 
         if (!teacherAccessHelper.isBatchOwnedByTeacher(resource.getClassBatch().getId(), teacher)) {
-            throw new RuntimeException("Unauthorized: You can only delete resources for your assigned batches");
+            throw new UnauthorizedAccessException("Unauthorized: You can only delete resources for your assigned batches");
         }
 
-        // file delete from disk if FILE type
         if (resource.getResourceType() == ResourceType.FILE && resource.getFileUrl() != null) {
             try {
-                Path filePath = Paths.get(uploadDir).resolve(resource.getFileUrl()).normalize();
-                File file = filePath.toFile();
-                if (file.exists()) {
-                    file.delete();
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+                Path filePath = uploadPath.resolve(resource.getFileUrl()).normalize();
+                if (filePath.startsWith(uploadPath)) {
+                    File file = filePath.toFile();
+                    if (file.exists()) {
+                        file.delete();
+                    }
                 }
             } catch (Exception ex) {
                 log.warn("Failed to delete physical file: {}", resource.getFileUrl(), ex);
@@ -171,7 +186,7 @@ public class ResourceService {
     @Transactional(readOnly = true)
     public Resource getResourceForDownload(Long id) {
         return resourceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resource not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Resource", "id", id));
     }
 
     @Transactional(readOnly = true)

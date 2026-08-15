@@ -9,6 +9,9 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.enums.AttendanceStatus;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.AttendanceRepository;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.StudentRepository;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,28 +38,33 @@ public class AttendanceService {
 
     @Transactional
     public void saveBulkAttendance(BulkAttendanceDto dto, Teacher teacher) {
-        // teacher ka batch nahi hai toh seedha 403 / exception
         if (!teacherAccessHelper.isBatchOwnedByTeacher(dto.getClassBatchId(), teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + dto.getClassBatchId());
         }
 
-        // future date attendance check
+        if (dto.getDate() == null) {
+            throw new BusinessValidationException("Attendance date is required");
+        }
+
         if (dto.getDate().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Attendance cannot be recorded for future dates");
+            throw new BusinessValidationException("Attendance cannot be recorded for future dates");
         }
 
         ClassBatch classBatch = classBatchRepository.findById(dto.getClassBatchId())
-                .orElseThrow(() -> new RuntimeException("Class batch not found with id: " + dto.getClassBatchId()));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
+
+        if (dto.getEntries() == null || dto.getEntries().isEmpty()) {
+            return;
+        }
 
         List<Attendance> attendancesToSave = new ArrayList<>();
 
         for (StudentAttendanceEntryDto entry : dto.getEntries()) {
             Student student = studentRepository.findById(entry.getStudentId())
-                    .orElseThrow(() -> new RuntimeException("Student not found: " + entry.getStudentId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Student", "id", entry.getStudentId()));
 
             AttendanceStatus status = entry.getStatus() != null ? entry.getStatus() : AttendanceStatus.PRESENT;
 
-            // same date pe already marked hai toh update karo, naya mat banao
             Optional<Attendance> existing = attendanceRepository.findByStudentIdAndDate(student.getId(), dto.getDate());
 
             if (existing.isPresent()) {
@@ -82,17 +91,18 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<StudentAttendanceEntryDto> getAttendanceFormData(Long batchId, LocalDate date, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
 
         List<Student> students = studentRepository.findByClassBatchIdOrderByNameAsc(batchId);
+        if (students.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        // existing attendance map karo
         Map<Long, AttendanceStatus> existingMap = attendanceRepository.findByClassBatchIdAndDate(batchId, date)
                 .stream()
                 .collect(Collectors.toMap(a -> a.getStudent().getId(), Attendance::getStatus, (a, b) -> b));
 
-        // default sab PRESENT — teacher sirf absent waale change karta hai
         return students.stream().map(s -> {
             AttendanceStatus status = existingMap.getOrDefault(s.getId(), AttendanceStatus.PRESENT);
             return StudentAttendanceEntryDto.builder()
@@ -107,10 +117,13 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceSummaryDto> getBatchAttendanceSummary(Long batchId, LocalDate from, LocalDate to, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
 
         List<Student> students = studentRepository.findByClassBatchIdOrderByNameAsc(batchId);
+        if (students.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         return students.stream().map(student -> {
             long present = attendanceRepository.countByStudentIdAndDateBetweenAndStatus(student.getId(), from, to, AttendanceStatus.PRESENT);
@@ -136,7 +149,7 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceRowDto> getAttendanceByBatchAndDate(Long batchId, LocalDate date, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
 
         return attendanceRepository.findByClassBatchIdAndDate(batchId, date).stream()

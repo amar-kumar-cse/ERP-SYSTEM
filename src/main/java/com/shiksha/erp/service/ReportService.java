@@ -7,6 +7,9 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Report;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.ReportRepository;
 import com.shiksha.erp.repository.StudentRepository;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,34 +35,44 @@ public class ReportService {
     @Transactional
     public void saveBulkReport(BulkReportDto dto, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(dto.getClassBatchId(), teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + dto.getClassBatchId());
         }
 
         if (dto.getMaxMarks() == null || dto.getMaxMarks() <= 0) {
-            throw new IllegalArgumentException("Maximum marks must be greater than zero");
+            throw new BusinessValidationException("Maximum marks must be greater than zero");
+        }
+
+        if (dto.getSubject() == null || dto.getSubject().isBlank()) {
+            throw new BusinessValidationException("Subject name is required");
+        }
+
+        if (dto.getExamDate() == null) {
+            throw new BusinessValidationException("Exam date is required");
         }
 
         ClassBatch classBatch = classBatchRepository.findById(dto.getClassBatchId())
-                .orElseThrow(() -> new RuntimeException("Class batch not found with id: " + dto.getClassBatchId()));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
 
         String subject = dto.getSubject().trim();
         LocalDate examDate = dto.getExamDate();
         Integer maxMarks = dto.getMaxMarks();
 
+        if (dto.getEntries() == null || dto.getEntries().isEmpty()) {
+            return;
+        }
+
         List<Report> reportsToSave = new ArrayList<>();
 
         for (StudentMarkEntryDto entry : dto.getEntries()) {
             Student student = studentRepository.findById(entry.getStudentId())
-                    .orElseThrow(() -> new RuntimeException("Student not found: " + entry.getStudentId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Student", "id", entry.getStudentId()));
 
             Integer marks = entry.getMarks() != null ? entry.getMarks() : 0;
 
-            // marks validation (0 <= marks <= maxMarks)
             if (marks < 0 || marks > maxMarks) {
-                throw new IllegalArgumentException("Marks for " + student.getName() + " (" + marks + ") must be between 0 and " + maxMarks);
+                throw new BusinessValidationException("Marks for " + student.getName() + " (" + marks + ") must be between 0 and " + maxMarks);
             }
 
-            // same student+subject+examDate already exists → update (not duplicate)
             Optional<Report> existing = reportRepository.findByStudentIdAndSubjectAndExamDate(student.getId(), subject, examDate);
 
             if (existing.isPresent()) {
@@ -90,17 +104,20 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<ReportRowDto> getReportsByBatchAndFilter(Long batchId, String subject, LocalDate examDate, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
 
         List<Report> reports = reportRepository.findByClassBatchId(batchId);
+        if (reports.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         return reports.stream()
                 .filter(r -> subject == null || subject.isBlank() || r.getSubject().equalsIgnoreCase(subject.trim()))
                 .filter(r -> examDate == null || r.getExamDate().equals(examDate))
                 .map(r -> {
-                    double percentage = r.getMaxMarks() > 0
-                            ? Math.round(((double) r.getMarks() / r.getMaxMarks() * 100.0) * 100.0) / 100.0
+                    double percentage = (r.getMaxMarks() != null && r.getMaxMarks() > 0)
+                            ? Math.round(((double) (r.getMarks() != null ? r.getMarks() : 0) / r.getMaxMarks() * 100.0) * 100.0) / 100.0
                             : 0.0;
 
                     return ReportRowDto.builder()
@@ -113,7 +130,7 @@ public class ReportService {
                             .maxMarks(r.getMaxMarks())
                             .percentage(percentage)
                             .remarks(r.getRemarks())
-                            .uploadedByName(r.getUploadedBy().getFullName())
+                            .uploadedByName(r.getUploadedBy() != null ? r.getUploadedBy().getFullName() : "Faculty")
                             .build();
                 })
                 .toList();
@@ -122,7 +139,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<String> getSubjectsForBatch(Long batchId, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(batchId, teacher)) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this class batch");
+            throw new UnauthorizedAccessException("Unauthorized: You are not assigned to class batch ID: " + batchId);
         }
         return reportRepository.findDistinctSubjectsByClassBatch(batchId);
     }
@@ -130,11 +147,10 @@ public class ReportService {
     @Transactional
     public void deleteReport(Long id, Teacher teacher) {
         Report report = reportRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Report not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Report", "id", id));
 
-        // batch ownership check
         if (!teacherAccessHelper.isBatchOwnedByTeacher(report.getClassBatch().getId(), teacher)) {
-            throw new RuntimeException("Unauthorized: You can only delete reports for your assigned batches");
+            throw new UnauthorizedAccessException("Unauthorized: You can only delete reports for your assigned batches");
         }
 
         reportRepository.delete(report);

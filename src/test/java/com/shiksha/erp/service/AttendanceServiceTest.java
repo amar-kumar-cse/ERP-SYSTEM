@@ -7,6 +7,8 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.enums.AttendanceStatus;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.AttendanceRepository;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.StudentRepository;
@@ -117,7 +119,7 @@ class AttendanceServiceTest {
     }
 
     @Test
-    @DisplayName("saveBulkAttendance: future date should throw IllegalArgumentException")
+    @DisplayName("saveBulkAttendance: future date should throw BusinessValidationException")
     void testSaveBulkAttendance_FutureDate_ThrowsException() {
         LocalDate futureDate = LocalDate.now().plusDays(2);
 
@@ -129,12 +131,12 @@ class AttendanceServiceTest {
 
         when(teacherAccessHelper.isBatchOwnedByTeacher(10L, teacher)).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> attendanceService.saveBulkAttendance(dto, teacher));
+        assertThrows(BusinessValidationException.class, () -> attendanceService.saveBulkAttendance(dto, teacher));
         verify(attendanceRepository, never()).saveAll(anyList());
     }
 
     @Test
-    @DisplayName("saveBulkAttendance: unauthorized teacher batch should throw RuntimeException")
+    @DisplayName("saveBulkAttendance: unauthorized teacher batch should throw UnauthorizedAccessException")
     void testSaveBulkAttendance_UnauthorizedBatch_ThrowsException() {
         BulkAttendanceDto dto = BulkAttendanceDto.builder()
                 .classBatchId(10L)
@@ -144,7 +146,7 @@ class AttendanceServiceTest {
 
         when(teacherAccessHelper.isBatchOwnedByTeacher(10L, teacher)).thenReturn(false);
 
-        assertThrows(RuntimeException.class, () -> attendanceService.saveBulkAttendance(dto, teacher));
+        assertThrows(UnauthorizedAccessException.class, () -> attendanceService.saveBulkAttendance(dto, teacher));
         verify(attendanceRepository, never()).saveAll(anyList());
     }
 }

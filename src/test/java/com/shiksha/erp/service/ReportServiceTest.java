@@ -7,6 +7,7 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Report;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
+import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.ReportRepository;
 import com.shiksha.erp.repository.StudentRepository;
@@ -84,7 +85,7 @@ class ReportServiceTest {
     }
 
     @Test
-    @DisplayName("saveBulkReport: marks greater than maxMarks should throw IllegalArgumentException")
+    @DisplayName("saveBulkReport: marks greater than maxMarks should throw BusinessValidationException")
     void testSaveBulkReport_MarksExceedMax_ThrowsException() {
         StudentMarkEntryDto entry = StudentMarkEntryDto.builder()
                 .studentId(100L)
@@ -103,7 +104,7 @@ class ReportServiceTest {
         when(classBatchRepository.findById(10L)).thenReturn(Optional.of(classBatch));
         when(studentRepository.findById(100L)).thenReturn(Optional.of(student));
 
-        assertThrows(IllegalArgumentException.class, () -> reportService.saveBulkReport(dto, teacher));
+        assertThrows(BusinessValidationException.class, () -> reportService.saveBulkReport(dto, teacher));
         verify(reportRepository, never()).saveAll(anyList());
     }
 

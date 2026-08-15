@@ -9,7 +9,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "students")
+@Table(
+    name = "students",
+    indexes = {
+        @Index(name = "idx_stu_roll", columnList = "rollNo"),
+        @Index(name = "idx_stu_batch", columnList = "class_batch_id"),
+        @Index(name = "idx_stu_parent", columnList = "parent_user_id")
+    }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
@@ -36,12 +43,10 @@ public class Student {
     @Column(length = 15)
     private String parentPhone;
 
-    // parent ka login account — ek parent ke multiple bachhe ho sakte hain
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_user_id")
     private User parentUser;
 
-    // Phase 2: student class assign hone se pehle bhi exist kar sakta hai (nullable)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_batch_id")
     private ClassBatch classBatch;

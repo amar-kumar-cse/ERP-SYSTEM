@@ -9,7 +9,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "teachers")
+@Table(
+    name = "teachers",
+    indexes = {
+        @Index(name = "idx_teacher_user", columnList = "user_id"),
+        @Index(name = "idx_teacher_phone", columnList = "phone")
+    }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
@@ -22,7 +28,6 @@ public class Teacher {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // user delete ya update hone par teacher ka account bhi sync rahe
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;

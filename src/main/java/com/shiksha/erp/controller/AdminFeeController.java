@@ -102,12 +102,17 @@ public class AdminFeeController {
     @PostMapping("/update/{feeId}")
     public String updateFee(
             @PathVariable Long feeId,
-            @ModelAttribute FeeUpdateDto dto,
+            @Valid @ModelAttribute FeeUpdateDto dto,
+            BindingResult bindingResult,
             @RequestParam(required = false) Long batchId,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
             RedirectAttributes redirectAttributes
     ) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMsg", "Invalid fee payment details provided");
+            return "redirect:/admin/fee" + (month != null && year != null ? "?month=" + month + "&year=" + year : "");
+        }
         try {
             feeService.updateFee(feeId, dto);
             redirectAttributes.addFlashAttribute("successMsg", "Fee payment record updated successfully!");

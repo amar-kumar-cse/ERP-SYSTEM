@@ -9,6 +9,8 @@ import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.entity.TeacherBatch;
 import com.shiksha.erp.entity.User;
 import com.shiksha.erp.enums.Role;
+import com.shiksha.erp.exception.DuplicateRecordException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.TeacherBatchRepository;
 import com.shiksha.erp.repository.TeacherRepository;
@@ -34,16 +36,14 @@ public class TeacherService {
 
     @Transactional
     public TeacherResponseDto createTeacher(TeacherCreateDto dto) {
-        // username aur email duplicate check
         if (userRepository.existsByUsername(dto.getUsername().trim())) {
-            throw new RuntimeException("Username already taken");
+            throw new DuplicateRecordException("Teacher username already taken: " + dto.getUsername().trim());
         }
 
         if (userRepository.existsByEmail(dto.getEmail().trim())) {
-            throw new RuntimeException("Email already registered");
+            throw new DuplicateRecordException("Teacher email already registered: " + dto.getEmail().trim());
         }
 
-        // 1. User create karo (Role TEACHER)
         User user = User.builder()
                 .username(dto.getUsername().trim())
                 .password(passwordEncoder.encode(dto.getPassword().trim()))
@@ -53,7 +53,6 @@ public class TeacherService {
                 .build();
         User savedUser = userRepository.save(user);
 
-        // 2. Teacher entity create karo
         Teacher teacher = Teacher.builder()
                 .user(savedUser)
                 .firstName(dto.getFirstName().trim())
@@ -70,7 +69,7 @@ public class TeacherService {
     @Transactional
     public TeacherResponseDto updateTeacher(Long id, TeacherUpdateDto dto) {
         Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", id));
 
         teacher.setFirstName(dto.getFirstName().trim());
         teacher.setLastName(dto.getLastName().trim());
@@ -85,17 +84,12 @@ public class TeacherService {
     @Transactional
     public void deleteTeacher(Long id) {
         Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", id));
 
         User user = teacher.getUser();
-
-        // pehle teacher ke batch mappings delete karo
         teacherBatchRepository.deleteByTeacherId(id);
-
-        // phir teacher entity delete karo
         teacherRepository.delete(teacher);
 
-        // aakhri mein user account delete karo
         if (user != null) {
             userRepository.delete(user);
         }
@@ -115,20 +109,19 @@ public class TeacherService {
     @Transactional(readOnly = true)
     public TeacherResponseDto findById(Long id) {
         Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", id));
         return toResponseDto(teacher);
     }
 
     @Transactional
     public void assignToBatch(BatchAssignDto dto) {
         Teacher teacher = teacherRepository.findById(dto.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", dto.getTeacherId()));
         ClassBatch classBatch = classBatchRepository.findById(dto.getClassBatchId())
-                .orElseThrow(() -> new RuntimeException("Class batch not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
 
-        // check karo teacher already is batch mein assigned hai ya nahi
         if (teacherBatchRepository.existsByTeacherIdAndClassBatchId(dto.getTeacherId(), dto.getClassBatchId())) {
-            throw new RuntimeException("Teacher is already assigned to this batch");
+            throw new DuplicateRecordException("Teacher is already assigned to this batch");
         }
 
         TeacherBatch teacherBatch = TeacherBatch.builder()

@@ -2,9 +2,10 @@ package com.shiksha.erp.service;
 
 import com.shiksha.erp.dto.ClassBatchCreateDto;
 import com.shiksha.erp.dto.ClassBatchResponseDto;
-import com.shiksha.erp.dto.TeacherResponseDto;
 import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Teacher;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.repository.TeacherBatchRepository;
@@ -39,9 +40,8 @@ public class ClassBatchService {
 
     @Transactional
     public ClassBatchResponseDto update(Long id, ClassBatchCreateDto dto) {
-        // batch nahi mili toh error throw karo
         ClassBatch batch = classBatchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Class batch not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", id));
 
         batch.setBatchName(dto.getBatchName().trim());
         batch.setTiming(dto.getTiming().trim());
@@ -54,19 +54,15 @@ public class ClassBatchService {
     @Transactional
     public void delete(Long id) {
         if (!classBatchRepository.existsById(id)) {
-            throw new RuntimeException("Class batch not found with id: " + id);
+            throw new ResourceNotFoundException("ClassBatch", "id", id);
         }
 
-        // agar students assigned hain toh delete mat hone do
         long studentCount = studentRepository.countByClassBatchId(id);
         if (studentCount > 0) {
-            throw new RuntimeException("Cannot delete batch: " + studentCount + " student(s) are currently enrolled.");
+            throw new BusinessValidationException("Cannot delete batch: " + studentCount + " student(s) are currently enrolled. Reassign students first.");
         }
 
-        // teachers ki assignments saaf karo
         teacherBatchRepository.deleteByClassBatchId(id);
-
-        // batch delete karo
         classBatchRepository.deleteById(id);
     }
 
@@ -80,13 +76,12 @@ public class ClassBatchService {
     @Transactional(readOnly = true)
     public ClassBatchResponseDto findById(Long id) {
         ClassBatch batch = classBatchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Class batch not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", id));
         return toResponseDto(batch);
     }
 
     @Transactional(readOnly = true)
     public List<Teacher> getAssignableTeachers(Long batchId) {
-        // jo teachers already is batch mein hain unhe exclude karo
         Set<Long> assignedTeacherIds = teacherBatchRepository.findByClassBatchId(batchId).stream()
                 .map(tb -> tb.getTeacher().getId())
                 .collect(Collectors.toSet());

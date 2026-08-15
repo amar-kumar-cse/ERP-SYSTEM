@@ -7,6 +7,8 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.User;
 import com.shiksha.erp.enums.Role;
+import com.shiksha.erp.exception.DuplicateRecordException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.repository.UserRepository;
@@ -28,24 +30,24 @@ public class StudentService {
 
     @Transactional
     public StudentResponseDto createStudent(StudentCreateDto dto) {
-        // rollNo duplicate check — roll number unique hona zaroori hai
+        if (dto.getRollNo() == null || dto.getRollNo().isBlank()) {
+            throw new IllegalArgumentException("Student roll number is required");
+        }
+
         if (studentRepository.existsByRollNo(dto.getRollNo().trim())) {
-            throw new RuntimeException("Roll no. already exists");
+            throw new DuplicateRecordException("Roll number already exists: " + dto.getRollNo().trim());
         }
 
-        // parent username unique check
         if (userRepository.existsByUsername(dto.getParentUsername().trim())) {
-            throw new RuntimeException("Username already taken");
+            throw new DuplicateRecordException("Parent login username is already taken: " + dto.getParentUsername().trim());
         }
 
-        // parent email unique check agar email provide kiya gaya ho
         if (dto.getParentEmail() != null && !dto.getParentEmail().isBlank()) {
             if (userRepository.existsByEmail(dto.getParentEmail().trim())) {
-                throw new RuntimeException("Email already taken");
+                throw new DuplicateRecordException("Parent email is already registered: " + dto.getParentEmail().trim());
             }
         }
 
-        // Parent ka User account create karo (PARENT role)
         User parentUser = User.builder()
                 .username(dto.getParentUsername().trim())
                 .password(passwordEncoder.encode(dto.getParentPassword().trim()))
@@ -55,14 +57,12 @@ public class StudentService {
                 .build();
         User savedParentUser = userRepository.save(parentUser);
 
-        // agar classBatchId diya hai toh batch fetch karo
         ClassBatch classBatch = null;
         if (dto.getClassBatchId() != null) {
             classBatch = classBatchRepository.findById(dto.getClassBatchId())
-                    .orElseThrow(() -> new RuntimeException("Selected class batch not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
         }
 
-        // Student entity save karo
         Student student = Student.builder()
                 .name(dto.getName().trim())
                 .rollNo(dto.getRollNo().trim())
@@ -79,16 +79,15 @@ public class StudentService {
     @Transactional
     public StudentResponseDto updateStudent(Long id, StudentUpdateDto dto) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", "id", id));
 
         student.setName(dto.getName().trim());
         student.setParentName(dto.getParentName() != null ? dto.getParentName().trim() : null);
         student.setParentPhone(dto.getParentPhone() != null ? dto.getParentPhone().trim() : null);
 
-        // batch change ya unassign handle karo
         if (dto.getClassBatchId() != null) {
             ClassBatch classBatch = classBatchRepository.findById(dto.getClassBatchId())
-                    .orElseThrow(() -> new RuntimeException("Selected class batch not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", dto.getClassBatchId()));
             student.setClassBatch(classBatch);
         } else {
             student.setClassBatch(null);
@@ -101,14 +100,11 @@ public class StudentService {
     @Transactional
     public void deleteStudent(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", "id", id));
 
         User parentUser = student.getParentUser();
-
-        // student delete karo
         studentRepository.delete(student);
 
-        // agar is parent ka koi aur bacha nahi hai toh parent ka login account bhi delete karo
         if (parentUser != null && studentRepository.countByParentUserId(parentUser.getId()) == 0) {
             userRepository.delete(parentUser);
         }
@@ -128,7 +124,7 @@ public class StudentService {
     @Transactional(readOnly = true)
     public StudentResponseDto findById(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", "id", id));
         return toResponseDto(student);
     }
 

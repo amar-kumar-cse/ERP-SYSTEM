@@ -4,6 +4,8 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.entity.TeacherBatch;
 import com.shiksha.erp.entity.User;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.TeacherBatchRepository;
 import com.shiksha.erp.repository.TeacherRepository;
 import com.shiksha.erp.repository.UserRepository;
@@ -23,15 +25,15 @@ public class TeacherAccessHelper {
 
     public Teacher getTeacherFromPrincipal(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) {
-            throw new RuntimeException("Unauthenticated request");
+            throw new UnauthorizedAccessException("Unauthenticated request. Please log in.");
         }
 
         String username = auth.getName();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User account not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("User account", "username", username));
 
         return teacherRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Teacher profile not found for user: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher profile not found for user: " + username));
     }
 
     public boolean isBatchOwnedByTeacher(Long batchId, Teacher teacher) {
@@ -39,6 +41,12 @@ public class TeacherAccessHelper {
             return false;
         }
         return teacherBatchRepository.existsByTeacherIdAndClassBatchId(teacher.getId(), batchId);
+    }
+
+    public void validateTeacherBatchAccess(Long batchId, Teacher teacher) {
+        if (!isBatchOwnedByTeacher(batchId, teacher)) {
+            throw new UnauthorizedAccessException("Access Denied: You are not assigned to class batch ID: " + batchId);
+        }
     }
 
     public List<ClassBatch> getTeacherBatches(Teacher teacher) {

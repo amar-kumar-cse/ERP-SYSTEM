@@ -61,7 +61,7 @@ public class TeacherMyClassesController {
         }
 
         ClassBatch batch = classBatchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Class batch not found: " + batchId));
+                .orElseThrow(() -> new com.shiksha.erp.exception.ResourceNotFoundException("ClassBatch", "id", batchId));
 
         List<Student> students = studentRepository.findByClassBatchIdOrderByNameAsc(batchId);
 

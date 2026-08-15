@@ -6,6 +6,9 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Resource;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.enums.ResourceType;
+import com.shiksha.erp.exception.BusinessValidationException;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.ClassBatchRepository;
 import com.shiksha.erp.service.ResourceService;
 import com.shiksha.erp.service.TeacherAccessHelper;
@@ -138,18 +141,23 @@ public class TeacherResourceController {
         com.shiksha.erp.entity.Resource resource = resourceService.getResourceForDownload(id);
 
         if (!teacherAccessHelper.isBatchOwnedByTeacher(resource.getClassBatch().getId(), teacher)) {
-            return ResponseEntity.status(403).build();
+            throw new UnauthorizedAccessException("Unauthorized: You do not have access to study material in this batch");
         }
 
         if (resource.getResourceType() != ResourceType.FILE) {
-            return ResponseEntity.badRequest().build();
+            throw new BusinessValidationException("Requested resource is a link, not a downloadable file");
         }
 
-        Path filePath = Paths.get(uploadDir).resolve(resource.getFileUrl()).normalize();
-        File file = filePath.toFile();
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path filePath = uploadPath.resolve(resource.getFileUrl()).normalize();
 
+        if (!filePath.startsWith(uploadPath)) {
+            throw new BusinessValidationException("Path traversal attempt detected");
+        }
+
+        File file = filePath.toFile();
         if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Resource file not found on disk: " + resource.getOriginalFileName());
         }
 
         String mimeType = URLConnection.guessContentTypeFromName(resource.getOriginalFileName());

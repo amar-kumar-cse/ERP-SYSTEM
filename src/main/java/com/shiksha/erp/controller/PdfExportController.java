@@ -1,6 +1,10 @@
 package com.shiksha.erp.controller;
 
+import com.shiksha.erp.entity.Fee;
 import com.shiksha.erp.entity.Student;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
+import com.shiksha.erp.repository.FeeRepository;
 import com.shiksha.erp.service.ParentStudentHelper;
 import com.shiksha.erp.service.PdfExportService;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +25,22 @@ public class PdfExportController {
 
     private final PdfExportService pdfExportService;
     private final ParentStudentHelper parentStudentHelper;
+    private final FeeRepository feeRepository;
 
     /**
-     * Parent download fee receipt PDF
+     * Parent download fee receipt PDF with access control validation
      */
     @GetMapping("/student/fee/receipt/{feeId}/pdf")
     @PreAuthorize("hasRole('PARENT')")
     public ResponseEntity<byte[]> downloadParentFeeReceipt(@PathVariable Long feeId, Authentication authentication) {
+        Student student = parentStudentHelper.getStudentByParentUsername(authentication.getName());
+        Fee fee = feeRepository.findById(feeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee", "id", feeId));
+
+        if (!fee.getStudent().getId().equals(student.getId())) {
+            throw new UnauthorizedAccessException("Access Denied: You do not have permission to download another student's fee receipt");
+        }
+
         byte[] pdfBytes = pdfExportService.generateFeeReceiptPdf(feeId);
 
         return ResponseEntity.ok()
@@ -56,7 +69,7 @@ public class PdfExportController {
     @GetMapping("/student/reports/pdf")
     @PreAuthorize("hasRole('PARENT')")
     public ResponseEntity<byte[]> downloadParentReportCard(Authentication authentication) {
-        Student student = parentStudentHelper.getStudentForParent(authentication.getName());
+        Student student = parentStudentHelper.getStudentByParentUsername(authentication.getName());
         byte[] pdfBytes = pdfExportService.generateStudentReportCardPdf(student.getId());
 
         String filename = "Report_Card_" + student.getRollNo().replace("-", "_") + ".pdf";

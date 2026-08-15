@@ -2,6 +2,8 @@ package com.shiksha.erp.service;
 
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.User;
+import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +18,14 @@ public class ParentStudentHelper {
 
     public Student getStudentByParentUsername(String username) {
         if (username == null || username.isBlank()) {
-            throw new RuntimeException("Unauthenticated parent session");
+            throw new UnauthorizedAccessException("Unauthenticated parent session");
         }
 
         User parentUser = userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new RuntimeException("Parent user account not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent user account", "username", username));
 
         return studentRepository.findFirstByParentUserId(parentUser.getId())
-                .orElseThrow(() -> new RuntimeException("No student linked to this account (" + username + ")"));
+                .orElseThrow(() -> new ResourceNotFoundException("No student linked to account: " + username));
     }
 
     public Student getStudentForParent(String username) {
@@ -33,7 +35,7 @@ public class ParentStudentHelper {
     public void validateParentAccess(String username, Long studentId) {
         Student student = getStudentByParentUsername(username);
         if (!student.getId().equals(studentId)) {
-            throw new RuntimeException("Access Denied: You cannot view or modify data for another parent's student.");
+            throw new UnauthorizedAccessException("Access Denied: You cannot view or modify data for another parent's student.");
         }
     }
 }

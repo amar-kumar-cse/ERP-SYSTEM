@@ -14,7 +14,13 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
     name = "fees",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "fee_month", "fee_year"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "fee_month", "fee_year"}),
+    indexes = {
+        @Index(name = "idx_fee_student_period", columnList = "student_id, fee_year, fee_month"),
+        @Index(name = "idx_fee_status_due", columnList = "status, dueDate"),
+        @Index(name = "idx_fee_period_status", columnList = "fee_month, fee_year, status"),
+        @Index(name = "idx_fee_order_id", columnList = "orderId")
+    }
 )
 @EntityListeners(AuditingEntityListener.class)
 @Getter

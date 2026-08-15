@@ -30,7 +30,7 @@ public class HelpController {
     @GetMapping
     public String helpIndex(Model model, Authentication auth) {
         User currentUser = userRepository.findByUsername(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found: " + auth.getName()));
+                .orElseThrow(() -> new com.shiksha.erp.exception.ResourceNotFoundException("User", "username", auth.getName()));
 
         List<TicketResponseDto> myTickets = helpTicketService.getMyTickets(currentUser);
 
@@ -51,7 +51,7 @@ public class HelpController {
             RedirectAttributes redirectAttributes
     ) {
         User currentUser = userRepository.findByUsername(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found: " + auth.getName()));
+                .orElseThrow(() -> new com.shiksha.erp.exception.ResourceNotFoundException("User", "username", auth.getName()));
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("myTickets", helpTicketService.getMyTickets(currentUser));

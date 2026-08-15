@@ -3,18 +3,17 @@ package com.shiksha.erp.service;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.entity.User;
+import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.repository.TeacherBatchRepository;
 import com.shiksha.erp.repository.TeacherRepository;
 import com.shiksha.erp.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
 
 import java.util.Optional;
 
@@ -55,7 +54,7 @@ class AccessControlTest {
     }
 
     @Test
-    @DisplayName("ParentStudentHelper: validateParentAccess should throw when parent accesses another student's ID")
+    @DisplayName("ParentStudentHelper: validateParentAccess should throw UnauthorizedAccessException when parent accesses another student's ID")
     void testParentDataIsolation_UnauthorizedAccessThrows() {
         User parentUser = User.builder().id(5L).username("parent1").build();
         Student linkedStudent = Student.builder().id(10L).name("Aarav").build();
@@ -67,6 +66,6 @@ class AccessControlTest {
         assertDoesNotThrow(() -> parentStudentHelper.validateParentAccess("parent1", 10L));
 
         // Unauthorized: accessing another student (ID 99)
-        assertThrows(RuntimeException.class, () -> parentStudentHelper.validateParentAccess("parent1", 99L));
+        assertThrows(UnauthorizedAccessException.class, () -> parentStudentHelper.validateParentAccess("parent1", 99L));
     }
 }

@@ -65,7 +65,7 @@ public class TeacherAttendanceController {
         }
 
         ClassBatch batch = classBatchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Class batch not found: " + batchId));
+                .orElseThrow(() -> new com.shiksha.erp.exception.ResourceNotFoundException("ClassBatch", "id", batchId));
 
         List<StudentAttendanceEntryDto> entries = attendanceService.getAttendanceFormData(batchId, attendanceDate, teacher);
 
