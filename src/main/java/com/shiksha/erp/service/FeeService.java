@@ -142,7 +142,8 @@ public class FeeService {
     @Transactional
     public int markOverdueFees() {
         LocalDate today = LocalDate.now();
-        List<Fee> duePastFees = feeRepository.findByStatusAndDueDateBefore(FeeStatus.DUE, today);
+        List<Fee> duePastFees = new java.util.ArrayList<>(feeRepository.findByStatusAndDueDateBefore(FeeStatus.DUE, today));
+        duePastFees.addAll(feeRepository.findByStatusAndDueDateBefore(FeeStatus.PARTIAL, today));
 
         for (Fee fee : duePastFees) {
             fee.setStatus(FeeStatus.OVERDUE);

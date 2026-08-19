@@ -2,11 +2,14 @@ package com.shiksha.erp.controller;
 
 import com.shiksha.erp.entity.Fee;
 import com.shiksha.erp.entity.Student;
+import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.exception.UnauthorizedAccessException;
 import com.shiksha.erp.repository.FeeRepository;
+import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.service.ParentStudentHelper;
 import com.shiksha.erp.service.PdfExportService;
+import com.shiksha.erp.service.TeacherAccessHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +28,8 @@ public class PdfExportController {
 
     private final PdfExportService pdfExportService;
     private final ParentStudentHelper parentStudentHelper;
+    private final TeacherAccessHelper teacherAccessHelper;
+    private final StudentRepository studentRepository;
     private final FeeRepository feeRepository;
 
     /**
@@ -80,10 +85,33 @@ public class PdfExportController {
     }
 
     /**
-     * Admin or Teacher download student report card PDF
+     * Teacher download student report card PDF with batch access check
+     */
+    @GetMapping("/teacher/reports/student/{studentId}/pdf")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<byte[]> downloadTeacherReportCard(@PathVariable Long studentId, Authentication authentication) {
+        var teacher = teacherAccessHelper.getTeacherFromPrincipal(authentication);
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student", "id", studentId));
+
+        if (student.getClassBatch() != null) {
+            teacherAccessHelper.validateTeacherBatchAccess(student.getClassBatch().getId(), teacher);
+        }
+
+        byte[] pdfBytes = pdfExportService.generateStudentReportCardPdf(studentId);
+
+        String filename = "Report_Card_" + student.getRollNo().replace("-", "_") + ".pdf";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
+
+    /**
+     * Admin download student report card PDF
      */
     @GetMapping("/admin/reports/student/{studentId}/pdf")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> downloadStudentReportCardByStaff(@PathVariable Long studentId) {
         byte[] pdfBytes = pdfExportService.generateStudentReportCardPdf(studentId);
 

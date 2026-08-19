@@ -60,4 +60,11 @@ public class Report {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public double getPercentage() {
+        if (maxMarks != null && maxMarks > 0 && marks != null) {
+            return Math.round(((double) marks / maxMarks * 100.0) * 10.0) / 10.0;
+        }
+        return 0.0;
+    }
 }
