@@ -94,7 +94,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Static assets & Public Authentication Endpoints
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico").permitAll()
                 .requestMatchers("/login", "/error", "/forgot-password/**", "/reset-password/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
 
