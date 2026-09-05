@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://erp-system-u2fj.onrender.com/$1"
+    }
+  ]
+}
