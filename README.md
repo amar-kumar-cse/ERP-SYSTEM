@@ -1,12 +1,12 @@
 # 🎓 Shiksha ERP — Coaching Institute Enterprise Management System
 
 [![Build & Test](https://github.com/amar-kumar-cse/ERP-SYSTEM/actions/workflows/ci.yml/badge.svg)](https://github.com/amar-kumar-cse/ERP-SYSTEM/actions)
-[![Java](https://img.shields.io/badge/Java-17%2B-blue.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21%2B-blue.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Spring Security](https://img.shields.io/badge/Spring%20Security-6.x-green.svg)](https://spring.io/projects/spring-security)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-ready, full-featured Coaching Institute Enterprise Resource Planning (ERP) platform built with **Spring Boot 3.3**, **Spring Security 6**, **Spring Data JPA**, **MySQL 8 / H2**, **Thymeleaf**, **OpenPDF**, **Razorpay**, and a **Modern Glassmorphic Bento UI**.
+An enterprise-ready, full-featured Coaching Institute Enterprise Resource Planning (ERP) platform built with **Spring Boot 3.3.4**, **Spring Security 6**, **Spring Data JPA**, **MySQL 8 / H2**, **Thymeleaf**, **OpenPDF**, **Razorpay**, and a **Modern Glassmorphic Bento UI**.
 
 ---
 
@@ -89,7 +89,7 @@ Shiksha ERP
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Java 17** or higher
+- **Java 21** or higher (LTS)
 - **Maven 3.8+**
 - **Docker & Docker Compose** (Optional for containerized run)
 

@@ -10,6 +10,7 @@ import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.exception.ResourceNotFoundException;
 import com.shiksha.erp.repository.HelpTicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,9 @@ public class HelpTicketService {
 
     private final HelpTicketRepository helpTicketRepository;
     private final EmailService emailService;
+
+    @Value("${app.notifications.admin-email:admin@shikshaerp.com}")
+    private String adminNotificationEmail;
 
     @Transactional
     public HelpTicket raiseTicket(TicketCreateDto dto, User user) {
@@ -44,7 +48,7 @@ public class HelpTicketService {
         HelpTicket saved = helpTicketRepository.save(ticket);
 
         emailService.sendNewTicketAdminEmail(
-                "admin@shikshaerp.com",
+                adminNotificationEmail,
                 saved.getTitle(),
                 user.getUsername(),
                 user.getRole().name()

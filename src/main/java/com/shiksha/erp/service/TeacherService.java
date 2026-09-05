@@ -9,13 +9,19 @@ import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.entity.TeacherBatch;
 import com.shiksha.erp.entity.User;
 import com.shiksha.erp.enums.Role;
+import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.exception.DuplicateRecordException;
 import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.repository.AttendanceRepository;
 import com.shiksha.erp.repository.ClassBatchRepository;
+import com.shiksha.erp.repository.HelpTicketRepository;
+import com.shiksha.erp.repository.ReportRepository;
+import com.shiksha.erp.repository.ResourceRepository;
 import com.shiksha.erp.repository.TeacherBatchRepository;
 import com.shiksha.erp.repository.TeacherRepository;
 import com.shiksha.erp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +38,10 @@ public class TeacherService {
     private final UserRepository userRepository;
     private final TeacherBatchRepository teacherBatchRepository;
     private final ClassBatchRepository classBatchRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final ReportRepository reportRepository;
+    private final ResourceRepository resourceRepository;
+    private final HelpTicketRepository helpTicketRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -86,12 +96,33 @@ public class TeacherService {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", id));
 
-        User user = teacher.getUser();
-        teacherBatchRepository.deleteByTeacherId(id);
-        teacherRepository.delete(teacher);
+        long attendanceCount = attendanceRepository.countByMarkedById(id);
+        long reportCount = reportRepository.countByUploadedById(id);
+        long resourceCount = resourceRepository.countByUploadedById(id);
 
-        if (user != null) {
-            userRepository.delete(user);
+        if (attendanceCount > 0 || reportCount > 0 || resourceCount > 0) {
+            throw new BusinessValidationException(String.format(
+                    "Cannot delete teacher '%s'. Existing linked records: %d attendance record(s), %d report card(s), %d study resource(s). Reassign or archive records first.",
+                    teacher.getFullName(), attendanceCount, reportCount, resourceCount));
+        }
+
+        try {
+            User user = teacher.getUser();
+            teacherBatchRepository.deleteByTeacherId(id);
+            teacherRepository.delete(teacher);
+
+            if (user != null) {
+                long ticketCount = helpTicketRepository.countByRaisedById(user.getId());
+                if (ticketCount > 0) {
+                    user.setEnabled(false);
+                    userRepository.save(user);
+                } else {
+                    userRepository.delete(user);
+                }
+            }
+            teacherRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessValidationException("Cannot delete teacher because linked historical records exist in the system.");
         }
     }
 

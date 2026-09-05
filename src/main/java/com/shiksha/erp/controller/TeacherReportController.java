@@ -22,6 +22,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -120,18 +121,29 @@ public class TeacherReportController {
     ) {
         Teacher teacher = teacherAccessHelper.getTeacherFromPrincipal(auth);
 
+        String markRedirectUrl = UriComponentsBuilder.fromPath("/teacher/reports/mark")
+                .queryParam("batchId", dto.getClassBatchId())
+                .queryParam("subject", dto.getSubject())
+                .queryParam("examDate", dto.getExamDate())
+                .queryParam("maxMarks", dto.getMaxMarks())
+                .build().encode().toUriString();
+
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMsg", "Invalid report submission data");
-            return "redirect:/teacher/reports/mark?batchId=" + dto.getClassBatchId() + "&subject=" + dto.getSubject() + "&examDate=" + dto.getExamDate() + "&maxMarks=" + dto.getMaxMarks();
+            return "redirect:" + markRedirectUrl;
         }
 
         try {
             reportService.saveBulkReport(dto, teacher);
             redirectAttributes.addFlashAttribute("successMsg", "Test marks successfully uploaded for " + dto.getSubject() + "!");
-            return "redirect:/teacher/reports/view?batchId=" + dto.getClassBatchId() + "&subject=" + dto.getSubject();
+            String viewRedirectUrl = UriComponentsBuilder.fromPath("/teacher/reports/view")
+                    .queryParam("batchId", dto.getClassBatchId())
+                    .queryParam("subject", dto.getSubject())
+                    .build().encode().toUriString();
+            return "redirect:" + viewRedirectUrl;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMsg", ex.getMessage());
-            return "redirect:/teacher/reports/mark?batchId=" + dto.getClassBatchId() + "&subject=" + dto.getSubject() + "&examDate=" + dto.getExamDate() + "&maxMarks=" + dto.getMaxMarks();
+            return "redirect:" + markRedirectUrl;
         }
     }
 
@@ -195,13 +207,13 @@ public class TeacherReportController {
             redirectAttributes.addFlashAttribute("errorMsg", ex.getMessage());
         }
 
-        String redirectUrl = "/teacher/reports/view";
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromPath("/teacher/reports/view");
         if (batchId != null) {
-            redirectUrl += "?batchId=" + batchId;
-            if (subject != null && !subject.isBlank()) {
-                redirectUrl += "&subject=" + subject;
-            }
+            uriBuilder.queryParam("batchId", batchId);
         }
-        return "redirect:" + redirectUrl;
+        if (subject != null && !subject.isBlank()) {
+            uriBuilder.queryParam("subject", subject);
+        }
+        return "redirect:" + uriBuilder.build().encode().toUriString();
     }
 }

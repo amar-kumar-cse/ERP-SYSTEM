@@ -90,6 +90,7 @@
                                     <th>Student Name</th>
                                     <th>Roll Number</th>
                                     <th style="width: 170px;">Obtained Marks</th>
+                                    <th style="width: 80px;" class="text-center">Absent</th>
                                     <th style="width: 110px;">Percentage</th>
                                     <th>Remarks / Note (Optional)</th>
                                 </tr>
@@ -110,14 +111,24 @@
                                         <div class="input-group input-group-sm">
                                             <input type="number" 
                                                    class="form-control marks-input" 
+                                                   th:id="'marks-input-' + ${i.index}"
                                                    th:field="*{entries[__${i.index}__].marks}"
                                                    min="0" 
                                                    th:max="${bulkReportDto.maxMarks}"
                                                    placeholder="0"
                                                    th:data-index="${i.index}"
-                                                   oninput="calculatePercentage(this)"
-                                                   required>
+                                                   oninput="calculatePercentage(this)">
                                             <span class="input-group-text text-muted" th:text="'/ ' + ${bulkReportDto.maxMarks}">/ 100</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center m-0">
+                                            <input type="checkbox" 
+                                                   class="form-check-input absent-check" 
+                                                   th:id="'absent-check-' + ${i.index}"
+                                                   th:field="*{entries[__${i.index}__].absent}"
+                                                   th:data-index="${i.index}"
+                                                   onchange="toggleAbsent(this)">
                                         </div>
                                     </td>
                                     <td>
@@ -128,6 +139,7 @@
                                     <td>
                                         <input type="text" 
                                                class="form-control form-control-sm" 
+                                               th:id="'remarks-input-' + ${i.index}"
                                                th:field="*{entries[__${i.index}__].remarks}"
                                                placeholder="e.g. Excellent / Needs revision in Algebra">
                                     </td>
@@ -165,7 +177,14 @@
 
         if (!badge) return;
 
-        if (isNaN(marks) || marks < 0) {
+        const absentCheck = document.getElementById('absent-check-' + index);
+        if (absentCheck && absentCheck.checked) {
+            badge.textContent = 'ABSENT';
+            badge.className = 'badge-flat badge-danger-flat';
+            return;
+        }
+
+        if (isNaN(marks) || marks < 0 || inputElement.value === '') {
             badge.textContent = '- %';
             badge.className = 'badge-flat bg-light text-dark border';
             return;
@@ -183,8 +202,44 @@
         }
     }
 
-    // Initialize percentages on page load if pre-filled
+    function toggleAbsent(checkbox) {
+        const index = checkbox.getAttribute('data-index');
+        const marksInput = document.getElementById('marks-input-' + index);
+        const remarksInput = document.getElementById('remarks-input-' + index);
+        const badge = document.getElementById('pct-badge-' + index);
+
+        if (checkbox.checked) {
+            if (marksInput) {
+                marksInput.value = '0';
+                marksInput.readOnly = true;
+                marksInput.classList.add('bg-light');
+            }
+            if (badge) {
+                badge.textContent = 'ABSENT';
+                badge.className = 'badge-flat badge-danger-flat';
+            }
+            if (remarksInput && !remarksInput.value) {
+                remarksInput.value = 'ABSENT';
+            }
+        } else {
+            if (marksInput) {
+                marksInput.readOnly = false;
+                marksInput.classList.remove('bg-light');
+                calculatePercentage(marksInput);
+            }
+            if (remarksInput && remarksInput.value === 'ABSENT') {
+                remarksInput.value = '';
+            }
+        }
+    }
+
+    // Initialize percentages and absent states on page load
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.absent-check').forEach(chk => {
+            if (chk.checked) {
+                toggleAbsent(chk);
+            }
+        });
         document.querySelectorAll('.marks-input').forEach(input => {
             if (input.value !== '') {
                 calculatePercentage(input);

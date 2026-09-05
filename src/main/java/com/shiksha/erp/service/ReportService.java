@@ -64,13 +64,28 @@ public class ReportService {
         List<Report> reportsToSave = new ArrayList<>();
 
         for (StudentMarkEntryDto entry : dto.getEntries()) {
+            boolean isAbsent = Boolean.TRUE.equals(entry.getAbsent());
+            Integer marks = entry.getMarks();
+
+            // If neither marks entered nor marked absent, skip saving to avoid accidental 0s
+            if (marks == null && !isAbsent) {
+                continue;
+            }
+
             Student student = studentRepository.findById(entry.getStudentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Student", "id", entry.getStudentId()));
 
-            Integer marks = entry.getMarks() != null ? entry.getMarks() : 0;
+            if (isAbsent) {
+                marks = 0;
+            }
 
             if (marks < 0 || marks > maxMarks) {
                 throw new BusinessValidationException("Marks for " + student.getName() + " (" + marks + ") must be between 0 and " + maxMarks);
+            }
+
+            String remarks = entry.getRemarks() != null ? entry.getRemarks().trim() : null;
+            if (isAbsent && (remarks == null || remarks.isBlank())) {
+                remarks = "ABSENT";
             }
 
             Optional<Report> existing = reportRepository.findByStudentIdAndSubjectAndExamDate(student.getId(), subject, examDate);
@@ -79,7 +94,7 @@ public class ReportService {
                 Report rep = existing.get();
                 rep.setMarks(marks);
                 rep.setMaxMarks(maxMarks);
-                rep.setRemarks(entry.getRemarks() != null ? entry.getRemarks().trim() : null);
+                rep.setRemarks(remarks);
                 rep.setUploadedBy(teacher);
                 rep.setClassBatch(classBatch);
                 reportsToSave.add(rep);
@@ -91,7 +106,7 @@ public class ReportService {
                         .examDate(examDate)
                         .marks(marks)
                         .maxMarks(maxMarks)
-                        .remarks(entry.getRemarks() != null ? entry.getRemarks().trim() : null)
+                        .remarks(remarks)
                         .uploadedBy(teacher)
                         .build();
                 reportsToSave.add(newRep);

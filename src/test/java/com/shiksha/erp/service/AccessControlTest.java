@@ -60,12 +60,27 @@ class AccessControlTest {
         Student linkedStudent = Student.builder().id(10L).name("Aarav").build();
 
         when(userRepository.findByUsername("parent1")).thenReturn(Optional.of(parentUser));
-        when(studentRepository.findFirstByParentUserId(5L)).thenReturn(Optional.of(linkedStudent));
+        when(studentRepository.findByParentUserId(5L)).thenReturn(java.util.List.of(linkedStudent));
 
         // Authorized: accessing own student (ID 10)
         assertDoesNotThrow(() -> parentStudentHelper.validateParentAccess("parent1", 10L));
 
         // Unauthorized: accessing another student (ID 99)
+        assertThrows(UnauthorizedAccessException.class, () -> parentStudentHelper.validateParentAccess("parent1", 99L));
+    }
+
+    @Test
+    @DisplayName("ParentStudentHelper: validateParentAccess allows access to all linked children for multi-student parent")
+    void testMultiStudentParentAccess() {
+        User parentUser = User.builder().id(5L).username("parent1").build();
+        Student child1 = Student.builder().id(10L).name("Aarav").build();
+        Student child2 = Student.builder().id(20L).name("Sneha").build();
+
+        when(userRepository.findByUsername("parent1")).thenReturn(Optional.of(parentUser));
+        when(studentRepository.findByParentUserId(5L)).thenReturn(java.util.List.of(child1, child2));
+
+        assertDoesNotThrow(() -> parentStudentHelper.validateParentAccess("parent1", 10L));
+        assertDoesNotThrow(() -> parentStudentHelper.validateParentAccess("parent1", 20L));
         assertThrows(UnauthorizedAccessException.class, () -> parentStudentHelper.validateParentAccess("parent1", 99L));
     }
 }

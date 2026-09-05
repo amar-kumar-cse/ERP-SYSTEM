@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorCode", 400);
         model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Invalid input or operation could not be processed.");
         model.addAttribute("requestedUrl", request.getRequestURI());
-        return "error/500";
+        return "error/400";
     }
 
     @ExceptionHandler(Exception.class)

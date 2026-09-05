@@ -13,5 +13,6 @@ public class StudentMarkEntryDto {
     private String studentName;
     private String rollNo;
     private Integer marks;
+    private Boolean absent;
     private String remarks;
 }

@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # Stage 1: Build the Application
-FROM maven:3.9.8-eclipse-temurin-17 AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 
 # Cache dependencies
@@ -15,7 +15,7 @@ COPY src src
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Minimalist, Secure Runtime Image
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 # Create unprivileged user for security

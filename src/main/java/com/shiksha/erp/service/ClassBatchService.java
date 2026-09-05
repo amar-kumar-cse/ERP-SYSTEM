@@ -6,11 +6,15 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Teacher;
 import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.exception.ResourceNotFoundException;
+import com.shiksha.erp.repository.AttendanceRepository;
 import com.shiksha.erp.repository.ClassBatchRepository;
+import com.shiksha.erp.repository.ReportRepository;
+import com.shiksha.erp.repository.ResourceRepository;
 import com.shiksha.erp.repository.StudentRepository;
 import com.shiksha.erp.repository.TeacherBatchRepository;
 import com.shiksha.erp.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,9 @@ public class ClassBatchService {
     private final StudentRepository studentRepository;
     private final TeacherBatchRepository teacherBatchRepository;
     private final TeacherRepository teacherRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final ReportRepository reportRepository;
+    private final ResourceRepository resourceRepository;
 
     @Transactional
     public ClassBatchResponseDto create(ClassBatchCreateDto dto) {
@@ -53,17 +60,27 @@ public class ClassBatchService {
 
     @Transactional
     public void delete(Long id) {
-        if (!classBatchRepository.existsById(id)) {
-            throw new ResourceNotFoundException("ClassBatch", "id", id);
-        }
+        ClassBatch batch = classBatchRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ClassBatch", "id", id));
 
         long studentCount = studentRepository.countByClassBatchId(id);
-        if (studentCount > 0) {
-            throw new BusinessValidationException("Cannot delete batch: " + studentCount + " student(s) are currently enrolled. Reassign students first.");
+        long attendanceCount = attendanceRepository.countByClassBatchId(id);
+        long reportCount = reportRepository.countByClassBatchId(id);
+        long resourceCount = resourceRepository.countByClassBatchId(id);
+
+        if (studentCount > 0 || attendanceCount > 0 || reportCount > 0 || resourceCount > 0) {
+            throw new BusinessValidationException(String.format(
+                    "Cannot delete batch '%s'. Existing linked records: %d student(s), %d attendance record(s), %d report card(s), %d study resource(s). Reassign or remove these records first.",
+                    batch.getBatchName(), studentCount, attendanceCount, reportCount, resourceCount));
         }
 
-        teacherBatchRepository.deleteByClassBatchId(id);
-        classBatchRepository.deleteById(id);
+        try {
+            teacherBatchRepository.deleteByClassBatchId(id);
+            classBatchRepository.delete(batch);
+            classBatchRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessValidationException("Cannot delete batch because linked historical records exist in the system.");
+        }
     }
 
     @Transactional(readOnly = true)

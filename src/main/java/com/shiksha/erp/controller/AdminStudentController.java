@@ -88,6 +88,7 @@ public class AdminStudentController {
                 .name(studentDto.getName())
                 .parentName(studentDto.getParentName())
                 .parentPhone(studentDto.getParentPhone())
+                .parentEmail(studentDto.getParentEmail())
                 .classBatchId(studentDto.getClassBatchId())
                 .build();
 

@@ -46,4 +46,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     @EntityGraph(attributePaths = {"student", "uploadedBy", "classBatch"})
     Optional<Report> findByStudentIdAndSubjectAndExamDate(Long studentId, String subject, LocalDate examDate);
+
+    long countByStudentId(Long studentId);
+
+    long countByUploadedById(Long teacherId);
+
+    long countByClassBatchId(Long classBatchId);
 }

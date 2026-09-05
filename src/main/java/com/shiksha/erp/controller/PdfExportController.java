@@ -94,9 +94,10 @@ public class PdfExportController {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student", "id", studentId));
 
-        if (student.getClassBatch() != null) {
-            teacherAccessHelper.validateTeacherBatchAccess(student.getClassBatch().getId(), teacher);
+        if (student.getClassBatch() == null) {
+            throw new UnauthorizedAccessException("Access Denied: Student is not assigned to any class batch");
         }
+        teacherAccessHelper.validateTeacherBatchAccess(student.getClassBatch().getId(), teacher);
 
         byte[] pdfBytes = pdfExportService.generateStudentReportCardPdf(studentId);
 

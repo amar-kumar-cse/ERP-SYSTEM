@@ -25,4 +25,8 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     List<Resource> findByUploadedBy(Teacher teacher);
 
     List<Resource> findByUploadedById(Long teacherId);
+
+    long countByUploadedById(Long teacherId);
+
+    long countByClassBatchId(Long classBatchId);
 }

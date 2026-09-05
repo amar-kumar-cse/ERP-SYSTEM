@@ -118,6 +118,11 @@ public class EmailService {
             return;
         }
 
+        if (mailSender == null) {
+            log.warn("JavaMailSender bean is not configured. Cannot send email to {}", to);
+            return;
+        }
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");

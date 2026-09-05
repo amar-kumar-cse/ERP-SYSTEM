@@ -17,6 +17,9 @@ public class StudentUpdateDto {
 
     private String parentPhone;
 
+    @jakarta.validation.constraints.Email(message = "Please provide a valid parent email")
+    private String parentEmail;
+
     // rollNo aur parentUsername change nahi honge
     private Long classBatchId;
 }

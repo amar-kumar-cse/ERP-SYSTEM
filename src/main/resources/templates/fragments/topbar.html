@@ -18,6 +18,26 @@
     <div class="topbar-right">
         <!-- User Profile Pill & Logout Button -->
         <div class="d-flex align-items-center gap-3">
+            <!-- Multi-Student Switcher for Parents -->
+            <div sec:authorize="hasRole('PARENT')" th:if="${parentStudents != null and #lists.size(parentStudents) > 1}" class="dropdown">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle rounded-pill px-3 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="studentSwitcherBtn">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <span th:text="${activeStudent != null ? activeStudent.name : 'Select Student'}">Student</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="studentSwitcherBtn">
+                    <li class="dropdown-header small text-uppercase fw-bold text-muted">Switch Student</li>
+                    <li th:each="st : ${parentStudents}">
+                        <form th:action="@{/student/switch/{id}(id=${st.id})}" method="post" class="m-0">
+                            <button type="submit" class="dropdown-item d-flex justify-content-between align-items-center"
+                                    th:classappend="${activeStudent != null and activeStudent.id == st.id} ? 'active fw-bold' : ''">
+                                <span th:text="${st.name}">Student Name</span>
+                                <small class="text-muted ms-2" th:text="'(' + ${st.rollNo} + ')'"></small>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
             <div class="d-none d-md-flex align-items-center gap-2 bg-light border px-3 py-1 rounded-pill">
                 <i class="bi bi-person-circle text-primary"></i>
                 <span class="fw-semibold text-dark small" sec:authentication="name">User</span>

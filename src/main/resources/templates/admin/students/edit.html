@@ -78,7 +78,12 @@
                                         <label for="parentPhone" class="form-label">Parent Contact Number</label>
                                         <input type="tel" id="parentPhone" th:field="*{parentPhone}" class="form-control">
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-12 col-md-6">
+                                        <label for="parentEmail" class="form-label">Parent Email Address</label>
+                                        <input type="email" id="parentEmail" th:field="*{parentEmail}" class="form-control" placeholder="parent@example.com">
+                                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('parentEmail')}" th:errors="*{parentEmail}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
                                         <label class="form-label">Parent Portal Username</label>
                                         <input type="text" class="form-control bg-light" th:value="${parentUsername}" readonly disabled>
                                     </div>

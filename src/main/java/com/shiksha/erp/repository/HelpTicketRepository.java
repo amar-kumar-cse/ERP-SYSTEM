@@ -24,4 +24,6 @@ public interface HelpTicketRepository extends JpaRepository<HelpTicket, Long> {
     Page<HelpTicket> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     long countByStatus(TicketStatus status);
+
+    long countByRaisedById(Long userId);
 }

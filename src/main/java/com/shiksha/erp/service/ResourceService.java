@@ -44,6 +44,11 @@ public class ResourceService {
             "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "zip", "jpg", "jpeg", "png", "txt"
     );
 
+    private static final java.util.regex.Pattern VALID_URL_PATTERN = java.util.regex.Pattern.compile(
+            "^https?://[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+$",
+            java.util.regex.Pattern.CASE_INSENSITIVE
+    );
+
     @Transactional
     public void saveResource(ResourceCreateDto dto, Teacher teacher) {
         if (!teacherAccessHelper.isBatchOwnedByTeacher(dto.getClassBatchId(), teacher)) {
@@ -91,7 +96,9 @@ public class ResourceService {
                     throw new BusinessValidationException("Invalid filename path traversal detected");
                 }
 
-                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                try (java.io.InputStream is = file.getInputStream()) {
+                    Files.copy(is, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                }
 
                 fileUrl = storedFileName;
                 originalFileName = origName;
@@ -104,7 +111,11 @@ public class ResourceService {
             if (dto.getLinkUrl() == null || dto.getLinkUrl().isBlank()) {
                 throw new BusinessValidationException("External resource URL is required");
             }
-            fileUrl = dto.getLinkUrl().trim();
+            String rawUrl = dto.getLinkUrl().trim();
+            if (!VALID_URL_PATTERN.matcher(rawUrl).matches()) {
+                throw new BusinessValidationException("Invalid resource URL: Only valid web links starting with http:// or https:// are allowed");
+            }
+            fileUrl = rawUrl;
         }
 
         Resource resource = Resource.builder()

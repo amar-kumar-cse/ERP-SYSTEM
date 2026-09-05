@@ -81,7 +81,11 @@ public class StudentResourceController {
         }
 
         if (resource.getResourceType() == ResourceType.LINK) {
-            return "redirect:" + resource.getFileUrl();
+            String url = resource.getFileUrl();
+            if (url == null || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+                throw new BusinessValidationException("Invalid resource URL format");
+            }
+            return "redirect:" + url;
         }
 
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();

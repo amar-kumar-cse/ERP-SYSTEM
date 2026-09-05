@@ -7,12 +7,12 @@ import com.shiksha.erp.entity.ClassBatch;
 import com.shiksha.erp.entity.Student;
 import com.shiksha.erp.entity.User;
 import com.shiksha.erp.enums.Role;
+import com.shiksha.erp.exception.BusinessValidationException;
 import com.shiksha.erp.exception.DuplicateRecordException;
 import com.shiksha.erp.exception.ResourceNotFoundException;
-import com.shiksha.erp.repository.ClassBatchRepository;
-import com.shiksha.erp.repository.StudentRepository;
-import com.shiksha.erp.repository.UserRepository;
+import com.shiksha.erp.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +26,10 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private final ClassBatchRepository classBatchRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final FeeRepository feeRepository;
+    private final ReportRepository reportRepository;
+    private final HelpTicketRepository helpTicketRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -93,6 +97,17 @@ public class StudentService {
             student.setClassBatch(null);
         }
 
+        if (student.getParentUser() != null && dto.getParentEmail() != null) {
+            String newEmail = dto.getParentEmail().trim().isEmpty() ? null : dto.getParentEmail().trim();
+            if (newEmail != null && !newEmail.equalsIgnoreCase(student.getParentUser().getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new DuplicateRecordException("Email is already registered to another user: " + newEmail);
+                }
+            }
+            student.getParentUser().setEmail(newEmail);
+            userRepository.save(student.getParentUser());
+        }
+
         Student updatedStudent = studentRepository.save(student);
         return toResponseDto(updatedStudent);
     }
@@ -102,11 +117,33 @@ public class StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student", "id", id));
 
-        User parentUser = student.getParentUser();
-        studentRepository.delete(student);
+        long attendanceCount = attendanceRepository.countByStudentId(id);
+        long feeCount = feeRepository.countByStudentId(id);
+        long reportCount = reportRepository.countByStudentId(id);
 
-        if (parentUser != null && studentRepository.countByParentUserId(parentUser.getId()) == 0) {
-            userRepository.delete(parentUser);
+        if (attendanceCount > 0 || feeCount > 0 || reportCount > 0) {
+            throw new BusinessValidationException(String.format(
+                    "Cannot delete student '%s' (%s): Student has %d attendance record(s), %d fee invoice(s), and %d test report(s). Historical records must be removed or archived first.",
+                    student.getName(), student.getRollNo(), attendanceCount, feeCount, reportCount
+            ));
+        }
+
+        try {
+            User parentUser = student.getParentUser();
+            studentRepository.delete(student);
+
+            if (parentUser != null && studentRepository.countByParentUserId(parentUser.getId()) == 0) {
+                long ticketsCount = helpTicketRepository.countByRaisedById(parentUser.getId());
+                if (ticketsCount > 0) {
+                    // Parent raised tickets, disable user account instead of hard-deleting to avoid FK violation
+                    parentUser.setEnabled(false);
+                    userRepository.save(parentUser);
+                } else {
+                    userRepository.delete(parentUser);
+                }
+            }
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessValidationException("Cannot delete student: Dependent records exist preventing deletion. Please review related data.");
         }
     }
 

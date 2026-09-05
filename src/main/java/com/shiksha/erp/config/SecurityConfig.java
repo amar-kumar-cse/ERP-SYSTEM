@@ -58,8 +58,10 @@ public class SecurityConfig {
             @Override
             public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
                 String username = request.getParameter("username");
-                loginAttemptService.loginFailed(username);
-                if (loginAttemptService.isBlocked(username)) {
+                if (username != null && !(exception instanceof org.springframework.security.authentication.LockedException)) {
+                    loginAttemptService.loginFailed(username);
+                }
+                if (exception instanceof org.springframework.security.authentication.LockedException || loginAttemptService.isBlocked(username)) {
                     response.sendRedirect("/login?locked=true");
                 } else {
                     response.sendRedirect("/login?error=true");
